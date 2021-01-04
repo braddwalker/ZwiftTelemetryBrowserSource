@@ -25,8 +25,7 @@ namespace ZwiftTelemetryBrowserSource
                 }
                 else
                 {
-                    html = File.ReadAllText("./src/gauge.html")
-                        .Replace("$CURRENT_POWER", zwiftTelemetry.PlayerState.Power.ToString());
+                    html = File.ReadAllText("./src/power-gauge.html");
                 }
             }
 
