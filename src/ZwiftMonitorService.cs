@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace ZwiftTelemetryBrowserSource
 {
@@ -46,7 +47,18 @@ namespace ZwiftTelemetryBrowserSource
                 //Logger.LogInformation($"OUTGOING: {e.PlayerState}");
             };
 
-            Task.Run(() => ZwiftPacketMonitor.StartCaptureAsync("en0"));
+            Task.Run(() => 
+            {
+                try 
+                {
+                    Logger.LogInformation("StartCaptureAsync");
+                    ZwiftPacketMonitor.StartCaptureAsync("en0").Wait();
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "ZwiftPacketMonitor.StartCaptureAsync");
+                }
+            });
         }
 
         private void OnStopping() {
