@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ZwiftTelemetryBrowserSource
 {
-    public class PowerRequest {
+    public class PowerRequestHandler {
         private readonly RequestDelegate _next;
-        private readonly ILogger<PowerRequest> _logger;
-        public PowerRequest(ILogger<PowerRequest> logger, RequestDelegate next)
+        private readonly ILogger<PowerRequestHandler> _logger;
+        public PowerRequestHandler(ILogger<PowerRequestHandler> logger, RequestDelegate next)
         {
             _next = next;
             _logger = logger;
@@ -25,7 +25,7 @@ namespace ZwiftTelemetryBrowserSource
                 }
                 else
                 {
-                    html = File.ReadAllText("./src/power-gauge.html");
+                    html = File.ReadAllText("./src/html/power-gauge.html");
                 }
             }
 

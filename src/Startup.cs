@@ -24,9 +24,10 @@ namespace ZwiftTelemetryBrowserSource
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.Map("/hr", r => r.UseMiddleware<HeartRateRequest>());
-            app.Map("/power", r => r.UseMiddleware<PowerRequest>());
-            app.Map("", r => r.UseMiddleware<OverviewRequest>());
+            app.Map("/hr", r => r.UseMiddleware<HeartRateRequestHandler>());
+            app.Map("/power", r => r.UseMiddleware<PowerRequestHandler>());
+            app.Map("/static", r => r.UseMiddleware<StaticRequestHandler>());
+            app.Map("", r => r.UseMiddleware<OverviewRequestHandler>());
         }
     }
 }

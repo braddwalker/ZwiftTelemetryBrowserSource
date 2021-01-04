@@ -6,37 +6,37 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     </head>
     <body>
-        <div id="gauge">
-            <canvas width=380 height=150 id="gauge-canvas"></canvas>
+        <div id="hr">
+            <canvas width=380 height=150 id="hr-gauge-canvas"></canvas>
         </div>
     </body>
 
     <script>
-        var opts = {
-        angle: 0.05, /// The span of the gauge arc
-        lineWidth: 0.44, // The line thickness
-        pointer: {
-            length: 0.6, // Relative to gauge radius
-            strokeWidth: 0.035 // The thickness
-        },
-        colorStart: '#6FADCF',
-        colorStop: '#8FC0DA',
-        strokeColor: '#E0E0E0',
-        staticZones: [
-            {strokeStyle: "#30B32D", min: 0, max: 126}, //Green
-            {strokeStyle: "#FFDD00", min: 127, max: 144}, // Yellow
-            {strokeStyle: "#FFA500", min: 145, max: 162}, // Orange
-            {strokeStyle: "#FF4500", min: 163, max: 180},  // Orange Red
-            {strokeStyle: "#F03E3E", min: 181, max: 250}  // Red
+        var hrOpts = {
+            angle: 0.05, /// The span of the gauge arc
+            lineWidth: 0.44, // The line thickness
+            pointer: {
+                length: 0.6, // Relative to gauge radius
+                strokeWidth: 0.035 // The thickness
+            },
+            colorStart: '#6FADCF',
+            colorStop: '#8FC0DA',
+            strokeColor: '#E0E0E0',
+            staticZones: [
+                {strokeStyle: "#30B32D", min: 0, max: 126}, //Green
+                {strokeStyle: "#FFDD00", min: 127, max: 144}, // Yellow
+                {strokeStyle: "#FFA500", min: 145, max: 162}, // Orange
+                {strokeStyle: "#FF4500", min: 163, max: 180},  // Orange Red
+                {strokeStyle: "#F03E3E", min: 181, max: 250}  // Red
             ],
         };
 
-        var target = document.getElementById('gauge-canvas'); // your canvas element
-        var gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
-        gauge.maxValue = 250; // set max gauge value
-        gauge.setMinValue(0);  // set min value
-        gauge.animationSpeed = 10;
-        gauge.set(0); // set actual value
+        var hr = document.getElementById('hr-gauge-canvas'); // your canvas element
+        var hrGauge = new Gauge(hr).setOptions(hrOpts); // create sexy gauge!
+        hrGauge.maxValue = 250; // set max gauge value
+        hrGauge.setMinValue(0);  // set min value
+        hrGauge.animationSpeed = 10;
+        hrGauge.set(0); // set actual value
 
         window.setInterval(function() { RefreshData(); }, 1000);
 
@@ -46,8 +46,8 @@
                 type: "GET",
                 url: "/hr/?dataOnly=true",
                 async: true,
-                success: function(result) { gauge.set(result);},
-                error: function() { gauge.set(0);},
+                success: function(result) { hrGauge.set(result);},
+                error: function() { hrGauge.set(0);},
             });
         }
     </script>

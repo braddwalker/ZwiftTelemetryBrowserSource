@@ -39,6 +39,11 @@ namespace ZwiftTelemetryBrowserSource
         private void OnStarted() {
             Logger.LogInformation("OnStarted has been called.");
 
+            ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
+                //Logger.LogInformation($"INCOMING: {e.PlayerState}");
+                //ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
+            };
+
             ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 //Logger.LogInformation($"OUTGOING: {e.PlayerState}");
                 ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
