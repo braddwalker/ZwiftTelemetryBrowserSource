@@ -56,19 +56,19 @@
             colorStop: '#8FC0DA',
             strokeColor: '#E0E0E0',
             staticZones: [
-                {strokeStyle: "#30B32D", min: 0, max: 165}, //Green
-                {strokeStyle: "#FFDD00", min: 166, max: 224}, // Yellow
-                {strokeStyle: "#FFA500", min: 225, max: 268}, // Orange
-                {strokeStyle: "#FF4500", min: 269, max: 313},  // Orange Red
-                {strokeStyle: "#F03E3E", min: 314, max: 356},  // Red
-                {strokeStyle: "#8B0000", min: 357, max: 400},  // Red
-                {strokeStyle: "#800000", min: 400, max: 450}  // Maroon
+                {strokeStyle: "#30B32D", min: 0, max: $Power.Z1.Max}, //Green
+                {strokeStyle: "#FFDD00", min: $Power.Z2.Min, max: $Power.Z2.Max}, // Yellow
+                {strokeStyle: "#FFA500", min: $Power.Z3.Min, max: $Power.Z3.Max}, // Orange
+                {strokeStyle: "#FF4500", min: $Power.Z4.Min, max: $Power.Z4.Max},  // Orange Red
+                {strokeStyle: "#F03E3E", min: $Power.Z5.Min, max: $Power.Z5.Max},  // Red
+                {strokeStyle: "#8B0000", min: $Power.Z6.Min, max: $Power.Z6.Max},  // Red
+                {strokeStyle: "#800000", min: $Power.Z7.Min, max: $Power.Z7.Max}  // Maroon
             ],
         };
 
         var power = document.getElementById('power-gauge-canvas'); // your canvas element
         var powerGauge = new Gauge(power).setOptions(powerOpts); // create sexy gauge!
-        powerGauge.maxValue = 450; // set max gauge value
+        powerGauge.maxValue = $Power.Z7.Max; // set max gauge value
         powerGauge.setMinValue(0);  // set min value
         powerGauge.animationSpeed = 10;
         powerGauge.set(0); // set actual value
@@ -86,18 +86,18 @@
             colorStop: '#8FC0DA',
             strokeColor: '#E0E0E0',
             staticZones: [
-                {strokeStyle: "#30B32D", min: 0, max: 126}, //Green
-                {strokeStyle: "#FFDD00", min: 127, max: 144}, // Yellow
-                {strokeStyle: "#FFA500", min: 145, max: 162}, // Orange
-                {strokeStyle: "#FF4500", min: 163, max: 180},  // Orange Red
-                {strokeStyle: "#F03E3E", min: 181, max: 205},  // Red
-                {strokeStyle: "#800000", min: 206, max: 250}  // Maroon
+                {strokeStyle: "#30B32D", min: 0, max: $HR.Z1.Max}, //Green
+                {strokeStyle: "#FFDD00", min: $HR.Z2.Min, max: $HR.Z2.Max}, // Yellow
+                {strokeStyle: "#FFA500", min: $HR.Z3.Min, max: $HR.Z3.Max}, // Orange
+                {strokeStyle: "#FF4500", min: $HR.Z4.Min, max: $HR.Z4.Max},  // Orange Red
+                {strokeStyle: "#F03E3E", min: $HR.Z5.Min, max: $HR.Z5.Max},  // Red
+                {strokeStyle: "#800000", min: $HR.Z6.Min, max: $HR.Z6.Max}  // Maroon
             ],
         };
 
         var hr = document.getElementById('hr-gauge-canvas'); // your canvas element
         var hrGauge = new Gauge(hr).setOptions(hrOpts); // create sexy gauge!
-        hrGauge.maxValue = 250; // set max gauge value
+        hrGauge.maxValue = $HR.Z6.Max; // set max gauge value
         hrGauge.setMinValue(0);  // set min value
         hrGauge.animationSpeed = 10;
         hrGauge.set(0); // set actual value

@@ -41,12 +41,12 @@ namespace ZwiftTelemetryBrowserSource
 
             ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
                 //Logger.LogInformation($"INCOMING: {e.PlayerState}");
-                //ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
+                ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
             };
 
             ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 //Logger.LogInformation($"OUTGOING: {e.PlayerState}");
-                ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
+                //ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
             };
 
             Task.Run(() => 

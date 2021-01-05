@@ -17,4 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="..\ZwiftPacketMonitor\ZwiftPacketMonitor.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>  
+  </ItemGroup>
 </Project>

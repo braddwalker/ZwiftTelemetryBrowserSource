@@ -17,6 +17,8 @@ namespace ZwiftTelemetryBrowserSource
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<Zones>(Configuration.GetSection("Zones"));           
+
             services.AddSingleton<ZwiftTelemetry>();
             services.AddSingleton<Monitor>();
             services.AddHostedService<ZwiftMonitorService>();
