@@ -146,18 +146,16 @@
         {
             $.ajax({
                 type: "GET",
-                url: "/power/?dataOnly=true",
+                url: "/?dataOnly=true",
                 async: true,
-                success: function(result) { powerGauge.set(result);},
-                error: function() { powerGauge.set(0);},
-            });
-
-            $.ajax({
-                type: "GET",
-                url: "/hr/?dataOnly=true",
-                async: true,
-                success: function(result) { hrGauge.set(result);},
-                error: function() { hrGauge.set(0);},
+                success: function(result) { 
+                    powerGauge.set(result.Power); 
+                    hrGauge.set(result.HeartRate); 
+                },
+                error: function() { 
+                    powerGauge.set(0); 
+                    hrGauge.set(0); 
+                },
             });
         }
     </script>

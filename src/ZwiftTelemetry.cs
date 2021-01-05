@@ -8,10 +8,7 @@ namespace ZwiftTelemetryBrowserSource
 
         public void UpdatePlayerState(PlayerState newState)
         {
-            if ((PlayerState == null) || (PlayerState.Id == newState.Id))
-            {
-                PlayerState = newState;
-            }
+            PlayerState = newState;
         }
     }
 }

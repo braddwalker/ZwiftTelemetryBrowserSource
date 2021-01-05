@@ -10,9 +10,10 @@ namespace ZwiftTelemetryBrowserSource
         static void Main(string[] args)
         {
             var config = new ConfigurationBuilder()
-                .AddCommandLine(args)
+                .AddJsonFile("appsettings.json")
                 .AddEnvironmentVariables()
-                .AddJsonFile("appsettings.json").Build();
+                .AddCommandLine(args)
+                .Build();
             var builder = new WebHostBuilder()
                 .ConfigureLogging(logging => {
                     logging.ClearProviders();
