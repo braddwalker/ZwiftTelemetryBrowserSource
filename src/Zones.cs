@@ -21,6 +21,5 @@ namespace ZwiftTelemetryBrowserSource
         public int Z3 {get; set;}
         public int Z4 {get; set;}
         public int Z5 {get; set;}
-        public int Z6 {get; set;}
     }
 }

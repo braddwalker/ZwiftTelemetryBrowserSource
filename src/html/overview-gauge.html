@@ -8,7 +8,7 @@
             .wrapper {
                 position: relative;
                 display: inline-block;
-                margin-bottom:-27px;
+                margin-bottom:-30px;
             }
 
             .text {
@@ -16,15 +16,49 @@
                 text-align: center;
                 width: 100%;
                 line-height: 150px;
-                top: 30px;
+                top: 35px;
+                font-size: 18px;
                 font-family: tahoma;
                 font-weight: 800;
                 color: white;
+                z-index:-10;
+            }
+
+            #gray-circle {
+                background: #778899;
+                border-radius: 50%;
+                width: 240px;
+                height: 240px;
+                z-index: -90;
+                position: absolute;
+                top: 15px;
+                left: 70px;
+            }
+
+            #black-circle {
+                background: black;
+                border-radius: 50%;
+                width: 242px;
+                height: 242px;
+                z-index: -99;
+                position: absolute;
+                top: 14px;
+                left: 69px;
+            }
+
+            .line{
+                width: 240px;
+                height: 47px;
+                border-bottom: 1px solid black;
+                position: absolute;
+                z-index: 99;
+                top: 88px;
+                left: 70px;
             }
             
             canvas {
                 position: relative;
-                z-index: -99;
+                z-index: -10;
             }
 
             body {
@@ -34,12 +68,15 @@
         </style>
     </head>
     <body>
+        <div id="black-circle"></div>
+        <div id="gray-circle"></div>
+        <div class="line"></div>
         <div id="power" class="wrapper">
-            <div id="power-label" class="text">Power Zone</div>
+            <div id="power-label" class="text">Power</div>
             <canvas width="380" height="150" id="power-gauge-canvas"></canvas>
         </div>
         <div id="hr" class="wrapper" style="transform: rotate(180deg) scaleX(-1);">
-            <div id="power-label" class="text" style="transform: rotate(180deg) scaleX(-1);">HR Zone</div>        
+            <div id="hr-label" class="text" style="transform: rotate(180deg) scaleX(-1);">Heart Rate</div>        
             <canvas width="380" height="150" id="hr-gauge-canvas"></canvas>
         </div>
     </body>
@@ -90,14 +127,13 @@
                 {strokeStyle: "#FFDD00", min: $HR.Z2.Min, max: $HR.Z2.Max}, // Yellow
                 {strokeStyle: "#FFA500", min: $HR.Z3.Min, max: $HR.Z3.Max}, // Orange
                 {strokeStyle: "#FF4500", min: $HR.Z4.Min, max: $HR.Z4.Max},  // Orange Red
-                {strokeStyle: "#F03E3E", min: $HR.Z5.Min, max: $HR.Z5.Max},  // Red
-                {strokeStyle: "#800000", min: $HR.Z6.Min, max: $HR.Z6.Max}  // Maroon
+                {strokeStyle: "#800000", min: $HR.Z5.Min, max: $HR.Z5.Max}  // Red
             ],
         };
 
         var hr = document.getElementById('hr-gauge-canvas'); // your canvas element
         var hrGauge = new Gauge(hr).setOptions(hrOpts); // create sexy gauge!
-        hrGauge.maxValue = $HR.Z6.Max; // set max gauge value
+        hrGauge.maxValue = $HR.Z5.Max; // set max gauge value
         hrGauge.setMinValue(0);  // set min value
         hrGauge.animationSpeed = 10;
         hrGauge.set(0); // set actual value

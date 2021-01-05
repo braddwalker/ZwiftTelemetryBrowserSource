@@ -46,9 +46,7 @@ namespace ZwiftTelemetryBrowserSource
                 .Replace("$HR.Z4.Min", (_zones.HR.Z3 + 1).ToString())
                 .Replace("$HR.Z4.Max", _zones.HR.Z4.ToString())
                 .Replace("$HR.Z5.Min", (_zones.HR.Z4 + 1).ToString())
-                .Replace("$HR.Z5.Max", _zones.HR.Z5.ToString())
-                .Replace("$HR.Z6.Min", (_zones.HR.Z5 + 1).ToString())
-                .Replace("$HR.Z6.Max", _zones.HR.Z6.ToString());
+                .Replace("$HR.Z5.Max", _zones.HR.Z5.ToString());
 
             await HttpResponseWritingExtensions.WriteAsync(context.Response, html);
         }
