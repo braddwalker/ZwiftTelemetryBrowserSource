@@ -153,8 +153,8 @@
                 url: "/Home/API",
                 async: true,
                 success: function(result) { 
-                    powerGauge.set(result.Power); 
-                    hrGauge.set(result.HeartRate); 
+                    powerGauge.set(result.power); 
+                    hrGauge.set(result.heartRate); 
                 },
                 error: function() { 
                     powerGauge.set(0); 

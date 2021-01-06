@@ -20,7 +20,7 @@ namespace ZwiftTelemetryBrowserSource.Controllers
             return View(_zones);
         }
 
-        public IActionResult API(ZwiftTelemetry zwiftTelemetry)
+        public IActionResult API([FromServices]ZwiftTelemetry zwiftTelemetry)
         {
             return new JsonResult(new TelemetryModel() {
                 PlayerId = zwiftTelemetry?.PlayerState?.Id ?? 0,
