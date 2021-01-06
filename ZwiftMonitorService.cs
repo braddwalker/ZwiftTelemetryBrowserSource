@@ -51,7 +51,7 @@ namespace ZwiftTelemetryBrowserSource
             {
                 Logger.LogInformation("Debug mode enabled");
 
-                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
+                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {                    
                     // We'll take whoever is the first player update to come in and
                     // will ignore others (makes the testing more consistent)
                     if ((playerState == null) || (playerState.Id == e.PlayerState.Id))
