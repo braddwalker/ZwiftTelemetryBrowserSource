@@ -100,7 +100,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 try 
                 {
                     Logger.LogInformation("StartCaptureAsync");
-                    ZwiftPacketMonitor.StartCaptureAsync("en0").Wait();
+                    ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface")).Wait();
                 }
                 catch (Exception e)
                 {
