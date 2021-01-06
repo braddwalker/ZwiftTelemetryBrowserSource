@@ -4,30 +4,31 @@ using Microsoft.Extensions.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
+using ZwiftTelemetryBrowserSource.Models;
+using Newtonsoft.Json;
 
-namespace ZwiftTelemetryBrowserSource
+namespace ZwiftTelemetryBrowserSource.Services
 {
     public class ZwiftMonitorService : IHostedService
     {
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
             IHostApplicationLifetime applicationLifetime,
-            ZwiftTelemetry zwiftTelemetry,
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
-            IConfiguration config) {
+            IConfiguration config,
+            INotificationsService notificationsService) {
 
             Config = config;
             Logger = logger;
             ApplicationLifetime = applicationLifetime;
-            ZwiftTelemetry = zwiftTelemetry;
             ZwiftPacketMonitor = zwiftPacketMonitor;
+            NotificationsService = notificationsService;
         }
 
+        private INotificationsService NotificationsService {get;}
         private IConfiguration Config {get;}
         private ILogger<ZwiftMonitorService> Logger {get;}
         private IHostApplicationLifetime ApplicationLifetime {get;}
-        private ZwiftTelemetry ZwiftTelemetry {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
-
         private ZwiftPacketMonitor.PlayerState playerState = null;
 
         public Task StartAsync(CancellationToken cancellationToken) {
@@ -51,19 +52,46 @@ namespace ZwiftTelemetryBrowserSource
             {
                 Logger.LogInformation("Debug mode enabled");
 
-                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {                    
-                    // We'll take whoever is the first player update to come in and
-                    // will ignore others (makes the testing more consistent)
-                    if ((playerState == null) || (playerState.Id == e.PlayerState.Id))
-                    {
-                        playerState = e.PlayerState;
-                        ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
+                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
+                    try 
+                    {               
+                        // We'll take whoever is the first player update to come in and
+                        // will ignore others (makes the testing more consistent)
+                        if ((playerState == null) || (playerState.Id == e.PlayerState.Id))
+                        {
+                            playerState = e.PlayerState;
+
+                            var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
+                            {
+                                PlayerId = e.PlayerState.Id,
+                                Power = e.PlayerState.Power,
+                                HeartRate = e.PlayerState.Heartrate
+                            });
+
+                            NotificationsService.SendNotificationAsync(telemetry, false).Wait();
+                        }
+                    }
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "IncomingPlayerEvent");
                     }
                 };
             }
             else {
                 ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
-                    ZwiftTelemetry.UpdatePlayerState(e.PlayerState);
+                    try 
+                    {
+                        var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
+                        {
+                            PlayerId = e.PlayerState.Id,
+                            Power = e.PlayerState.Power,
+                            HeartRate = e.PlayerState.Heartrate
+                        });
+
+                        NotificationsService.SendNotificationAsync(telemetry, false).Wait();
+                    }
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "OutgoingPlayerEvent");
+                    }
                 };
             }
 

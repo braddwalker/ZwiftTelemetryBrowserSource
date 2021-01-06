@@ -146,23 +146,17 @@
 
         // ---------------------------------------
 
-        window.setInterval(function() { RefreshData(); }, 500);
+        var source = new EventSource('/sse-notifications');
+        source.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate);
 
-        function RefreshData()
-        {
-            $.ajax({
-                type: "GET",
-                url: "/Home/API",
-                async: true,
-                success: function(result) { 
-                    powerGauge.set(result.power); 
-                    hrGauge.set(result.heartRate); 
-                },
-                error: function() { 
-                    powerGauge.set(0); 
-                    hrGauge.set(0); 
-                },
-            });
+            powerGauge.set(data.Power); 
+            hrGauge.set(data.HeartRate); 
+        };
+        source.onerror = function() {
+            powerGauge.set(0); 
+            hrGauge.set(0); 
         }
     </script>
 </html>
