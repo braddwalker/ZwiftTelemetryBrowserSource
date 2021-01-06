@@ -21,9 +21,7 @@ namespace ZwiftTelemetryBrowserSource
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Register default ServerSentEventsService.
             services.AddServerSentEvents();
-
             services.AddNotificationsService(Configuration);
             services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(options =>
             {
@@ -48,10 +46,8 @@ namespace ZwiftTelemetryBrowserSource
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-                // Set up first Server-Sent Events endpoint.
-                endpoints.MapServerSentEvents("/see-heartbeat");
 
-                // Set up second (separated) Server-Sent Events endpoint.
+                endpoints.MapServerSentEvents("/see-heartbeat");
                 endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/sse-notifications");
             });
         }
