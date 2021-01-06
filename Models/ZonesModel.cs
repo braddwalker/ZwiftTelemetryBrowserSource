@@ -1,6 +1,11 @@
-namespace ZwiftTelemetryBrowserSource
+namespace ZwiftTelemetryBrowserSource.Models
 {
-    public class Zones {
+    public class ZonesModel {
+        public ZonesModel()
+        {
+            Power = new PowerZones();
+            HR = new HRZones();
+        }
         public PowerZones Power {get; set;}
         public HRZones HR {get; set;}
     }

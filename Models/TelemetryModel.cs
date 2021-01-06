@@ -1,6 +1,6 @@
-namespace ZwiftTelemetryBrowserSource
+namespace ZwiftTelemetryBrowserSource.Models
 {
-    public class Telemetry {
+    public class TelemetryModel {
         public int PlayerId {get; set;}
         public int Power {get; set;}
         public int HeartRate {get; set;}
