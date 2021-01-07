@@ -1,4 +1,9 @@
-﻿@using ZwiftTelemetryBrowserSource.Models
+﻿@*
+    This is the UI portion of the browser source page. It renders the power/hr gauges
+    and connects the page to the backend using an HTML EventSource for constant data streaming.
+*@
+
+@using ZwiftTelemetryBrowserSource.Models
 @model ZonesModel;
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
@@ -110,7 +115,7 @@
 
         var power = document.getElementById('power-gauge-canvas');
         var powerGauge = new Gauge(power).setOptions(powerOpts);
-        powerGauge.animationSpeed = 10;
+        powerGauge.animationSpeed = 5;
         powerGauge.maxValue = @Model.Power.Z7;
         powerGauge.setMinValue(0);
         powerGauge.set(0);
@@ -138,7 +143,7 @@
 
         var hr = document.getElementById('hr-gauge-canvas');
         var hrGauge = new Gauge(hr).setOptions(hrOpts);
-        hrGauge.animationSpeed = 10;
+        hrGauge.animationSpeed = 5;
         hrGauge.maxValue = @Model.HR.Z5;
         hrGauge.setMinValue(0);
         hrGauge.set(0);
@@ -150,8 +155,9 @@
             var data = JSON.parse(event.data);
             console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate);
 
-            powerGauge.set(data.Power); 
-            hrGauge.set(data.HeartRate); 
+            // Gauges get wonky if you blow past the stated max value
+            powerGauge.set(data.Power <= @Model.Power.Z7 ? data.Power : @Model.Power.Z7); 
+            hrGauge.set(data.HeartRate <= @Model.HR.Z5 ? data.HeartRate : @Model.HR.Z5);
         };
         source.onerror = function() {
             powerGauge.set(0); 

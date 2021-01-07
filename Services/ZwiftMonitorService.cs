@@ -9,7 +9,12 @@ using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
-    public class ZwiftMonitorService : IHostedService
+    /// <summary>
+    /// This service is responsible for listening for Zwift game events, dispatched by the ZwiftPacketMonitor
+    /// library. When game events are received, they then get dispatched to the client webpage via a Server-Side
+    /// Events implementation.
+    /// </summary>
+    public class ZwiftMonitorService : BackgroundService
     {
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
             IHostApplicationLifetime applicationLifetime,
@@ -29,25 +34,17 @@ namespace ZwiftTelemetryBrowserSource.Services
         private ILogger<ZwiftMonitorService> Logger {get;}
         private IHostApplicationLifetime ApplicationLifetime {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
-        private ZwiftPacketMonitor.PlayerState playerState = null;
+        private int trackedPlayerId;
 
-        public Task StartAsync(CancellationToken cancellationToken) {
-            ApplicationLifetime.ApplicationStarted.Register(OnStarted);
-            ApplicationLifetime.ApplicationStopping.Register(OnStopping);
-            ApplicationLifetime.ApplicationStopped.Register(OnStopped);
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            Logger.LogInformation("Starting ZwiftMonitorService");
 
-            return Task.CompletedTask;
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken) {
-            return Task.CompletedTask;
-        }
-
-        private void OnStarted() {
-            Logger.LogInformation("OnStarted has been called.");
-
-            // For debug testing we can simply browse other riders and
-            // "borrow" their telemetry
+            // Debug mode will operate a little differently than the regular game mode.
+            // When debug mode is on, we'll pick the first INCOMING player's data to use, and will lock
+            // onto that PlayerId to filter out subsequent updates. This makes the testing more consistent. 
+            // This way it's possible to test event dispatch w/o having to be on the bike with power meter 
+            // and heart rate strap actually connected and outputting data.
             if (Config.GetValue<bool>("Debug"))
             {
                 Logger.LogInformation("Debug mode enabled");
@@ -55,22 +52,10 @@ namespace ZwiftTelemetryBrowserSource.Services
                 ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
                     try 
                     {               
-                        // When debug mode is on, we'll pick the first INCOMING player's data to use, and will lock
-                        // onto that PlayerId to filter out subsequent updates. This makes the testing more consistent. 
-                        // This way it's possible to test event dispatch w/o having to be on the bike with power meter 
-                        // and heart rate strap actually connected and outputting data.
-                        if ((playerState == null) || (playerState.Id == e.PlayerState.Id))
+                        if ((trackedPlayerId == 0) || (trackedPlayerId == e.PlayerState.Id))
                         {
-                            playerState = e.PlayerState;
-
-                            var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
-                            {
-                                PlayerId = e.PlayerState.Id,
-                                Power = e.PlayerState.Power,
-                                HeartRate = e.PlayerState.Heartrate
-                            });
-
-                            NotificationsService.SendNotificationAsync(telemetry, false).Wait();
+                            trackedPlayerId = e.PlayerState.Id;
+                            DispatchPlayerStateUpdate(e.PlayerState);
                         }
                     }
                     catch (Exception ex) {
@@ -84,14 +69,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                     try 
                     {
-                        var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
-                        {
-                            PlayerId = e.PlayerState.Id,
-                            Power = e.PlayerState.Power,
-                            HeartRate = e.PlayerState.Heartrate
-                        });
-
-                        NotificationsService.SendNotificationAsync(telemetry, false).Wait();
+                        DispatchPlayerStateUpdate(e.PlayerState);
                     }
                     catch (Exception ex) {
                         Logger.LogError(ex, "OutgoingPlayerEvent");
@@ -99,27 +77,24 @@ namespace ZwiftTelemetryBrowserSource.Services
                 };
             }
 
-            Task.Run(() => 
+            await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"));
+        }
+
+        private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {
+            var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
             {
-                try 
-                {
-                    Logger.LogInformation("StartCaptureAsync");
-                    ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface")).Wait();
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(e, "ZwiftPacketMonitor.StartCaptureAsync");
-                }
+                PlayerId = state.Id,
+                Power = state.Power,
+                HeartRate = state.Heartrate
             });
+
+            NotificationsService.SendNotificationAsync(telemetry, false).Wait();
         }
 
-        private void OnStopping() {
-            Logger.LogInformation("OnStopping has been called.");
-            ZwiftPacketMonitor.StopCaptureAsync().Wait();
-        }
-
-        private void OnStopped() {
-            Logger.LogInformation("OnStopped has been called.");
+        public override async Task StopAsync(CancellationToken cancellationToken)
+        {
+            Logger.LogInformation("Stopping ZwiftMonitorService");
+            await ZwiftPacketMonitor.StopCaptureAsync();
         }
     }
 }
