@@ -5,7 +5,6 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <script src="~/js/circletype.min.js"></script>
         <script src="~/js/gauge.min.js"></script>
         <script src="~/js/jquery.min.js"></script>
         <style>
@@ -89,11 +88,11 @@
 
     <script>
         var powerOpts = {
-            angle: 0, /// The span of the gauge arc
-            lineWidth: 0.44, // The line thickness
+            angle: 0,
+            lineWidth: 0.44,
             pointer: {
-                length: 0.6, // Relative to gauge radius
-                strokeWidth: 0.035 // The thickness
+                length: 0.6,
+                strokeWidth: 0.035
             },
             colorStart: '#6FADCF',
             colorStop: '#8FC0DA',
@@ -109,21 +108,21 @@
             ],
         };
 
-        var power = document.getElementById('power-gauge-canvas'); // your canvas element
-        var powerGauge = new Gauge(power).setOptions(powerOpts); // create sexy gauge!
-        powerGauge.maxValue = @Model.Power.Z7; // set max gauge value
-        powerGauge.setMinValue(0);  // set min value
+        var power = document.getElementById('power-gauge-canvas');
+        var powerGauge = new Gauge(power).setOptions(powerOpts);
         powerGauge.animationSpeed = 10;
-        powerGauge.set(0); // set actual value
+        powerGauge.maxValue = @Model.Power.Z7;
+        powerGauge.setMinValue(0);
+        powerGauge.set(0);
 
         // ---------------------------------------
 
         var hrOpts = {
-            angle: 0, /// The span of the gauge arc
-            lineWidth: 0.44, // The line thickness
+            angle: 0,
+            lineWidth: 0.44,
             pointer: {
-                length: 0.6, // Relative to gauge radius
-                strokeWidth: 0.035 // The thickness
+                length: 0.6,
+                strokeWidth: 0.035
             },
             colorStart: '#6FADCF',
             colorStop: '#8FC0DA',
@@ -137,16 +136,16 @@
             ],
         };
 
-        var hr = document.getElementById('hr-gauge-canvas'); // your canvas element
-        var hrGauge = new Gauge(hr).setOptions(hrOpts); // create sexy gauge!
-        hrGauge.maxValue = @Model.HR.Z5; // set max gauge value
-        hrGauge.setMinValue(0);  // set min value
+        var hr = document.getElementById('hr-gauge-canvas');
+        var hrGauge = new Gauge(hr).setOptions(hrOpts);
         hrGauge.animationSpeed = 10;
-        hrGauge.set(0); // set actual value
+        hrGauge.maxValue = @Model.HR.Z5;
+        hrGauge.setMinValue(0);
+        hrGauge.set(0);
 
         // ---------------------------------------
 
-        var source = new EventSource('/sse-notifications');
+        var source = new EventSource('/notifications');
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
             console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate);

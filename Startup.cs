@@ -18,11 +18,9 @@ namespace ZwiftTelemetryBrowserSource
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddServerSentEvents();
-            services.AddNotificationsService(Configuration);
+            services.AddTransient<INotificationsService, LocalNotificationsService>();
             services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(options =>
             {
                 options.ReconnectInterval = 5000;
@@ -34,7 +32,6 @@ namespace ZwiftTelemetryBrowserSource
             services.AddControllersWithViews();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
@@ -45,10 +42,7 @@ namespace ZwiftTelemetryBrowserSource
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-
-                endpoints.MapServerSentEvents("/see-heartbeat");
-                endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/sse-notifications");
+                endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/notifications");
             });
         }
     }

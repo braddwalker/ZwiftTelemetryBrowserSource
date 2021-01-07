@@ -55,8 +55,10 @@ namespace ZwiftTelemetryBrowserSource.Services
                 ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
                     try 
                     {               
-                        // We'll take whoever is the first player update to come in and
-                        // will ignore others (makes the testing more consistent)
+                        // When debug mode is on, we'll pick the first INCOMING player's data to use, and will lock
+                        // onto that PlayerId to filter out subsequent updates. This makes the testing more consistent. 
+                        // This way it's possible to test event dispatch w/o having to be on the bike with power meter 
+                        // and heart rate strap actually connected and outputting data.
                         if ((playerState == null) || (playerState.Id == e.PlayerState.Id))
                         {
                             playerState = e.PlayerState;
@@ -77,6 +79,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                 };
             }
             else {
+                // Under normal circumstances we will only be dispatching telemetry data from OUTGOING
+                // packets, which represent YOU, that are being sent out to the Zwift servers.
                 ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                     try 
                     {
