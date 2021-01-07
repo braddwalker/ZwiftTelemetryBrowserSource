@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ZwiftPacketMonitor;
 using ZwiftTelemetryBrowserSource.Models;
+using Lib.AspNetCore.ServerSentEvents;
+using ZwiftTelemetryBrowserSource.Services;
 
 namespace ZwiftTelemetryBrowserSource
 {
@@ -19,9 +21,14 @@ namespace ZwiftTelemetryBrowserSource
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));           
+            services.AddServerSentEvents();
+            services.AddNotificationsService(Configuration);
+            services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(options =>
+            {
+                options.ReconnectInterval = 5000;
+            });
 
-            services.AddSingleton<ZwiftTelemetry>();
+            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));           
             services.AddTransient<Monitor>();
             services.AddHostedService<ZwiftMonitorService>();
             services.AddControllersWithViews();
@@ -38,6 +45,10 @@ namespace ZwiftTelemetryBrowserSource
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
+                endpoints.MapServerSentEvents("/see-heartbeat");
+                endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/sse-notifications");
             });
         }
     }
