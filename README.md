@@ -60,3 +60,5 @@ dotnet run
 Since this program implements a small web server, you can use it to add the gauge content to your stream by simply adding a Browser Source to your streaming program of choice, and then size and position the gauge on the screen as desired.
 
 ![OBS configuration](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/obs-settings.png?raw=true)
+---
+![Stream example](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/zwift-example.png?raw=true)
