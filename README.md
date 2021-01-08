@@ -3,6 +3,11 @@ This project implements a small .NET web server that can be used to render a cus
 
 ![Telemetry gauge](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/zwift-example-animated.gif?raw=true)
 
+## Prerequisites
+---
+* [Microsoft .NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0)
+* [Npcap](https://nmap.org/npcap/windows-10.html) (windows only)
+
 ## Configuration
 ---
 Configuration for the app is handled by the `appsettings.json` file.
