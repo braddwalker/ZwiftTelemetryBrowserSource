@@ -1,7 +1,7 @@
 # ZwiftTelemetryBrowserSource
-This project implements a small .NET web server that can be used to render custom telemetry for the Zwift cycling simulator in the form of an OBS or X-Split browser source. The program will intercept the UDP packets sent between the Zwift game and remote servers, and parse the telemetry data from those packets. The telemetry can then be added to your Zwift scene, adding dynamic, visual content to your stream. Currently this browser source includes two "speedometer" type data gauges that show, **in realtime**, your current power and HR on a scale based on your actual zones.
+This project implements a small .NET web server that can be used to render custom telemetry for the Zwift cycling simulator in the form of an OBS or X-Split browser source. The program will intercept the UDP packets sent between the Zwift game and remote servers, and parse the telemetry data from those packets. The telemetry can then be added to your Zwift scene, adding dynamic, visual content to your stream. Currently this browser source includes a "speedometer" type data gauge that shows, **in realtime**, your current power and HR on a scale based on your actual zones.
 
-![Telemetry gauges](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/zwift-example-animated.gif?raw=true)
+![Telemetry gauge](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/zwift-example-animated.gif?raw=true)
 
 ## Configuration
 ---
@@ -46,7 +46,7 @@ Zones | Your HR and Power values for each of your respective performance zones. 
 
 ## Usage
 ---
-To start the web server, simply run the following command.
+To start the program, simply run the following command.
 
 **NOTE**: Because this program utilizes a network packet capture to intercept the UDP packets from the Zwift game, your system may require this code to run using elevated privileges.
 
