@@ -1,5 +1,5 @@
 # ZwiftTelemetryBrowserSource
-This project implements a small .NET web server that can be used to render custom telemetry for the Zwift cycling simulator in the form of an OBS or X-Split browser source. The program will intercept the UDP packets sent between the Zwift game and remote servers, and parse the telemetry data from those packets. The telemetry can then be added to your Zwift scene, adding dynamic, visual content to your stream. Currently this browser source includes a "speedometer" type data gauge that shows, **in realtime**, your current power and HR on a scale based on your actual zones.
+This project implements a small .NET web server that can be used to render a custom view of your realtime Zwift HR and power data in the form of an OBS or X-Split browser source. The program will intercept the UDP packets sent between the Zwift game and remote servers, and parse the telemetry data from those packets. The telemetry can then be added to your Zwift scene, adding dynamic, visual content to your stream. Currently this browser source includes a "speedometer" type data gauge that shows, **in realtime**, your current power and HR on a scale based on your actual performance zones.
 
 ![Telemetry gauge](https://github.com/braddwalker/ZwiftTelemetryBrowserSource/blob/main/docs/images/zwift-example-animated.gif?raw=true)
 
@@ -42,7 +42,7 @@ Setting | Value
 ------- | ------
 NetworkInterface | The name/id of the network interface to capture game packets on. This would be whatever network interface your Zwift game is using to connect to the internet.
 Urls | The hostname (defaults to any ip or name bound to your local machine) and port number for IIS to listen for requests on.
-Zones | Your HR and Power values for each of your respective performance zones. Each zone corresponds to a different color slice on the gauge.
+Zones | Your HR and Power values for each of your respective performance zones. HR zones are in bpm, power zones in watts. Each zone corresponds to a different color slice on the gauge.
 
 ## Usage
 ---
