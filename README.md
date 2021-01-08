@@ -40,7 +40,7 @@ Configuration for the app is handled by the `appsettings.json` file.
 
 Setting | Value
 ------- | ------
-NetworkInterface | The name/id of the network interface to capture game packets on.
+NetworkInterface | The name/id of the network interface to capture game packets on. This would be whatever network interface your Zwift game is using to connect to the internet.
 Urls | The hostname (defaults to any ip or name bound to your local machine) and port number for IIS to listen for requests on.
 Zones | Your HR and Power values for each of your respective performance zones. Each zone corresponds to a different color slice on the gauge.
 
