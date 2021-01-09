@@ -77,7 +77,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 };
             }
 
-            await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"));
+            await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"), cancellationToken);
         }
 
         private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {

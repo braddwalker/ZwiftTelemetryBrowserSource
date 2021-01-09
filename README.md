@@ -6,7 +6,7 @@ This project implements a small .NET web server that can be used to render a cus
 ## Prerequisites
 ---
 * [Microsoft .NET 5.0](https://dotnet.microsoft.com/download/dotnet/5.0)
-* [Npcap](https://nmap.org/npcap/windows-10.html) (windows only)
+* [Npcap](https://nmap.org/download.html) (Windows only)
 
 ## Configuration
 ---
@@ -20,7 +20,7 @@ Configuration for the app is handled by the `appsettings.json` file.
       "Microsoft.Hosting.Lifetime": "Information"
     }
   },
-  "NetworkInterface": "en0",
+  "NetworkInterface": "",
   "Urls": "http://*:89",
   "Zones": {
       "HR": {
@@ -45,7 +45,7 @@ Configuration for the app is handled by the `appsettings.json` file.
 
 Setting | Value
 ------- | ------
-NetworkInterface | The name/id of the network interface to capture game packets on. This would be whatever network interface your Zwift game is using to connect to the internet.
+NetworkInterface | For Windows, use your computer's IP address. For Mac, use the network interface name (`en0`, etc.)
 Urls | The hostname (defaults to any ip or name bound to your local machine) and port number for IIS to listen for requests on.
 Zones | Your HR and Power values for each of your respective performance zones. HR zones are in bpm, power zones in watts. Each zone corresponds to a different color slice on the gauge.
 
