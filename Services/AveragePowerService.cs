@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -16,11 +17,14 @@ namespace ZwiftTelemetryBrowserSource.Services
         private IList<AvgPowerData> IntermediatePowerData;
         private int AveragePower;
 
+        private AsyncAutoResetEvent AsyncAutoResetEvent;
+
         public AveragePowerService(ILogger<AveragePowerService> logger) {
             Logger = logger;
             PowerData = new HashSet<AvgPowerData>();
             IntermediatePowerData = new List<AvgPowerData>();
             AveragePower = 0;
+            AsyncAutoResetEvent = new AsyncAutoResetEvent(false);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -65,7 +69,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 AveragePower = PowerData.Sum(x => x.Power) / PowerData.Count();
                             }
 
-                            await Task.Delay(500, cancellationToken);
+                            // Wait here until new data arrives to calculate
+                            await AsyncAutoResetEvent.WaitAsync(cancellationToken);
                         }
                         catch (TaskCanceledException) {}
                         catch (Exception e) {
@@ -86,6 +91,9 @@ namespace ZwiftTelemetryBrowserSource.Services
             if (state.Speed > 0)
             {
                 IntermediatePowerData.Add(new AvgPowerData() { Power = state.Power });
+                
+                // Signal to the background thread that new data has arrived
+                AsyncAutoResetEvent.Set();
             }
 
             return (AveragePower);
