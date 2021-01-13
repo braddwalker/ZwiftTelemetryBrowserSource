@@ -17,23 +17,23 @@ namespace ZwiftTelemetryBrowserSource.Services
     public class ZwiftMonitorService : BackgroundService
     {
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
-            IHostApplicationLifetime applicationLifetime,
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
             IConfiguration config,
-            INotificationsService notificationsService) {
+            INotificationsService notificationsService,
+            AveragePowerService averagePowerService) {
 
             Config = config;
             Logger = logger;
-            ApplicationLifetime = applicationLifetime;
             ZwiftPacketMonitor = zwiftPacketMonitor;
             NotificationsService = notificationsService;
-        }
+            AveragePowerService = averagePowerService;
+            }
 
         private INotificationsService NotificationsService {get;}
         private IConfiguration Config {get;}
         private ILogger<ZwiftMonitorService> Logger {get;}
-        private IHostApplicationLifetime ApplicationLifetime {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
+        private AveragePowerService AveragePowerService {get;}
         private int trackedPlayerId;
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -85,7 +85,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             {
                 PlayerId = state.Id,
                 Power = state.Power,
-                HeartRate = state.Heartrate
+                HeartRate = state.Heartrate,
+                AvgPower = AveragePowerService.LogPower(state)
             });
 
             NotificationsService.SendNotificationAsync(telemetry, false).Wait();
