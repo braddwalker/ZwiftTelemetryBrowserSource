@@ -3,13 +3,14 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <script src="~/js/jquery.min.js"></script>
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/howler.js"></script>
+
         <style>
         </style>
     </head>
     <body>
         <form>
-            <audio id="notification" src="~/audio/rockon.ogg"></audio>
             <div id="message" class="message" />
         </form>
     </body>
@@ -19,7 +20,12 @@
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
             document.getElementById('message').innerText = data.Message;
-            document.getElementById("notification").play();
+            setTimeout(function() { document.getElementById('message').innerText = '';}, 10000);    
+
+            var sound = new Howl({
+                src: ['/audio/rockon.ogg']
+            });
+            sound.play();            
         };
         source.onerror = function() {}
     </script>
