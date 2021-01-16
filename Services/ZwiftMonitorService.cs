@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System;
 using ZwiftTelemetryBrowserSource.Models;
+using ZwiftTelemetryBrowserSource.Services.Notifications;
 using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
@@ -20,16 +21,19 @@ namespace ZwiftTelemetryBrowserSource.Services
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
             IConfiguration config,
             INotificationsService notificationsService,
+            IRideOnNotificationService rideOnNotificationService,
             AverageTelemetryService averageTelemetryService) {
 
             Config = config;
             Logger = logger;
             ZwiftPacketMonitor = zwiftPacketMonitor;
             NotificationsService = notificationsService;
+            RideOnNotificationService = rideOnNotificationService;
             AverageTelemetryService = averageTelemetryService;
-            }
+        }
 
         private INotificationsService NotificationsService {get;}
+        private IRideOnNotificationService RideOnNotificationService {get;}
         private IConfiguration Config {get;}
         private ILogger<ZwiftMonitorService> Logger {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
@@ -97,6 +101,16 @@ namespace ZwiftTelemetryBrowserSource.Services
 
                 ZwiftPacketMonitor.IncomingChatMessageEvent += (s, e) => {
                     Logger.LogInformation($"CHAT: {e.Message.ToString()}");
+
+                    var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                    {
+                        PlayerId = e.Message.RiderId,
+                        FirstName = e.Message.FirstName,
+                        LastName = e.Message.LastName,
+                        Message = $"{e.Message.FirstName} {e.Message.LastName} says \"{e.Message.Message}\""
+                    });
+
+                    RideOnNotificationService.SendNotificationAsync(message, false).Wait();
                 };
 
                 ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
@@ -105,6 +119,16 @@ namespace ZwiftTelemetryBrowserSource.Services
 
                 ZwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
                     Logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
+
+                    var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                    {
+                        PlayerId = e.RideOn.RiderId,
+                        FirstName = e.RideOn.FirstName,
+                        LastName = e.RideOn.LastName,
+                        Message = $"{e.RideOn.FirstName} {e.RideOn.LastName} gave you a ride on!"
+                    });
+
+                    RideOnNotificationService.SendNotificationAsync(message, false).Wait();
                 };
             }
 

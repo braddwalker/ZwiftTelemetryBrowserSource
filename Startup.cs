@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,8 @@ using ZwiftPacketMonitor;
 using ZwiftTelemetryBrowserSource.Models;
 using Lib.AspNetCore.ServerSentEvents;
 using ZwiftTelemetryBrowserSource.Services;
+using ZwiftTelemetryBrowserSource.Services.Notifications;
+using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource
 {
@@ -22,9 +25,19 @@ namespace ZwiftTelemetryBrowserSource
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<INotificationsService, LocalNotificationsService>();
+            services.AddTransient<IRideOnNotificationService, RideOnNotificationService>();
             services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(options =>
             {
                 options.ReconnectInterval = 5000;
+            });
+            services.AddServerSentEvents<IRideOnNotificationsSSEService, RideOnNotificationsSSEService>(options =>
+            {
+                options.ReconnectInterval = 5000;
+            });
+
+            services.AddResponseCompression(options =>
+            {
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "text/event-stream" });
             });
 
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));        
@@ -57,7 +70,9 @@ namespace ZwiftTelemetryBrowserSource
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+                
                 endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/notifications");
+                endpoints.MapServerSentEvents<RideOnNotificationsSSEService>("/rideon");
             });
         }
     }

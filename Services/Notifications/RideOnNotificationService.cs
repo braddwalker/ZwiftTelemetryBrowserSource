@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
 
-namespace ZwiftTelemetryBrowserSource.Services
+namespace ZwiftTelemetryBrowserSource.Services.Notifications
 {
-    internal class LocalNotificationsService : NotificationsServiceBase, INotificationsService
+    internal class RideOnNotificationService : NotificationsServiceBase, IRideOnNotificationService
     {
         #region Constructor
-        public LocalNotificationsService(INotificationsServerSentEventsService notificationsServerSentEventsService)
+        public RideOnNotificationService(IRideOnNotificationsSSEService notificationsServerSentEventsService)
             : base(notificationsServerSentEventsService)
         { }
         #endregion

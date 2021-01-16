@@ -1,7 +1,7 @@
 using Lib.AspNetCore.ServerSentEvents;
 using Microsoft.Extensions.Options;
 
-namespace ZwiftTelemetryBrowserSource.Services
+namespace ZwiftTelemetryBrowserSource.Services.Notifications
 {
     internal class NotificationsServerSentEventsService : ServerSentEventsService, INotificationsServerSentEventsService
     {

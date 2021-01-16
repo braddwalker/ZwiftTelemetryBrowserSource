@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Lib.AspNetCore.ServerSentEvents;
 
-namespace ZwiftTelemetryBrowserSource.Services
+namespace ZwiftTelemetryBrowserSource.Services.Notifications
 {
     internal abstract class NotificationsServiceBase
     {
         #region Fields
-        private INotificationsServerSentEventsService _notificationsServerSentEventsService;
+        private IServerSentEventsService _notificationsServerSentEventsService;
         #endregion
 
         #region Constructor
-        protected NotificationsServiceBase(INotificationsServerSentEventsService notificationsServerSentEventsService)
+        protected NotificationsServiceBase(IServerSentEventsService notificationsServerSentEventsService)
         {
             _notificationsServerSentEventsService = notificationsServerSentEventsService;
         }
