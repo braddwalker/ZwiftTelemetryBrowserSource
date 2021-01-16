@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ZwiftPacketMonitor;
@@ -29,9 +28,12 @@ namespace ZwiftTelemetryBrowserSource
             });
 
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));        
-            services.AddTransient<Monitor>();
-            services.AddSingleton<AveragePowerService>();
-            services.AddHostedService<AveragePowerService>(provider => provider.GetService<AveragePowerService>());
+            services.AddSingleton<Monitor>();
+
+            // Since this is a background service, we also need to inject it into other services
+            services.AddSingleton<AverageTelemetryService>();
+            services.AddHostedService<AverageTelemetryService>(provider => provider.GetService<AverageTelemetryService>());
+
             services.AddHostedService<ZwiftMonitorService>();
             services.AddControllersWithViews();
             services.AddLogging(builder => 

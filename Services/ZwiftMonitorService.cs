@@ -20,21 +20,26 @@ namespace ZwiftTelemetryBrowserSource.Services
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
             IConfiguration config,
             INotificationsService notificationsService,
-            AveragePowerService averagePowerService) {
+            AverageTelemetryService averageTelemetryService) {
 
             Config = config;
             Logger = logger;
             ZwiftPacketMonitor = zwiftPacketMonitor;
             NotificationsService = notificationsService;
-            AveragePowerService = averagePowerService;
+            AverageTelemetryService = averageTelemetryService;
             }
 
         private INotificationsService NotificationsService {get;}
         private IConfiguration Config {get;}
         private ILogger<ZwiftMonitorService> Logger {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
-        private AveragePowerService AveragePowerService {get;}
+        private AverageTelemetryService AverageTelemetryService {get;}
+        
+        // For debugging purposes only
         private int trackedPlayerId;
+        
+        // This is used to track when a player enters/leaves an event
+        private int currentGroupId;
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -70,10 +75,36 @@ namespace ZwiftTelemetryBrowserSource.Services
                     try 
                     {
                         DispatchPlayerStateUpdate(e.PlayerState);
+
+                        // See if we need to trigger an event/world changed
+                        if (currentGroupId != e.PlayerState.GroupId)
+                        {
+                            currentGroupId = e.PlayerState.GroupId;
+
+                            // If we are entering an event, aways reset
+                            // If we are leaving an event, let the config decide
+                            if ((e.PlayerState.GroupId != 0) 
+                                || (e.PlayerState.GroupId == 0 && Config.GetValue<bool>("ResetAveragesOnEventFinish")))
+                            {
+                                AverageTelemetryService.Reset();   
+                            }
+                        }
                     }
                     catch (Exception ex) {
                         Logger.LogError(ex, "OutgoingPlayerEvent");
                     }
+                };
+
+                ZwiftPacketMonitor.IncomingChatMessageEvent += (s, e) => {
+                    Logger.LogInformation($"CHAT: {e.Message.ToString()}");
+                };
+
+                ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
+                    //Logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
+                };
+
+                ZwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
+                    Logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
                 };
             }
 
@@ -81,12 +112,17 @@ namespace ZwiftTelemetryBrowserSource.Services
         }
 
         private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {
+            var summary = AverageTelemetryService.LogTelemetry(state);
+
             var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
             {
                 PlayerId = state.Id,
                 Power = state.Power,
                 HeartRate = state.Heartrate,
-                AvgPower = AveragePowerService.LogPower(state)
+                AvgPower = summary.Power,
+                AvgHeartRate = summary.Heartrate,
+                AvgSpeed = summary.Speed,
+                AvgCadence = summary.Cadence
             });
 
             NotificationsService.SendNotificationAsync(telemetry, false).Wait();
