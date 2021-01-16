@@ -1,0 +1,27 @@
+@using ZwiftTelemetryBrowserSource.Models
+@model AveragesModel;
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <script src="~/js/jquery.min.js"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+        <div style="width:400px">
+            <span class="label" id="label">@Model.DisplayName:</span><span class="metric" id="metric"></span>
+        </div>
+    </body>
+
+    <script>
+        var source = new EventSource('/notifications');
+        source.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate + ', Avg Power: ' + data.AvgPower + ', Avg Speed: ' + data.AvgSpeed + ', Avg Cadence: ' + data.AvgCadence + ', Avg HR: ' + data.AvgHeartRate);
+            document.getElementById('metric').innerText = eval(data.@Model.Metric);
+        };
+        source.onerror = function() {}
+    </script>
+</html>

@@ -191,10 +191,17 @@ namespace ZwiftTelemetryBrowserSource.Services
         {
             using (AsyncLock.Lock())
             {
-                // Only calculating avg power if moving
+                // Only calculating avgs if the player is moving
                 if (state.Speed > 0)
                 {
                     IntermediatePowerData.Add(new AvgPowerData() { Power = state.Power });
+
+                    // convert speed from mm/hr to mi/hr
+                    IntermediateSpeedData.Add(new AvgSpeedData() { Speed = (int)(state.Speed / 1609000) });
+                    
+                    // convert cadence from uHz to rpm
+                    IntermediateCadenceData.Add(new AvgCadenceData() { Cadence = (int)(state.CadenceUHz * 0.00006) });
+                    IntermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
                 }
 
                 // convert speed from mm/hr to mi/hr

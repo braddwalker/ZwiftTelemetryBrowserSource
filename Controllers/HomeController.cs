@@ -19,5 +19,6 @@ namespace ZwiftTelemetryBrowserSource.Controllers
         {
             return View(_zones);
         }
+
     }
 }
