@@ -10,20 +10,36 @@
         </style>
     </head>
     <body>
-        <form>
-            <div id="message" class="message" />
-        </form>
+        <div id="message" class="message"></div>
+        <div id="avatarDiv"><img id="avatar" width="100" height="100"></div>
     </body>
 
     <script>
         var source = new EventSource('/rideon');
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
-            document.getElementById('message').innerText = data.Message;
-            setTimeout(function() { document.getElementById('message').innerText = '';}, 10000);    
+            console.log(data);
+
+            document.getElementById("message").innerText = data.Message;
+
+            if (data.Avatar)
+            {
+                document.getElementById("avatar").src = data.Avatar;
+                document.getElementById("avatar").style.display = 'block';
+            }
+            else 
+            {
+                document.getElementById("avatar").style.display = 'none';
+            }
+
+            setTimeout(function() 
+                { 
+                    document.getElementById("message").innerText = '';
+                    document.getElementById("avatar").style.display = 'none';
+                }, 10000);    
 
             var sound = new Howl({
-                src: ['/audio/rockon.ogg']
+                src: [data.AudioSource]
             });
             sound.play();            
         };

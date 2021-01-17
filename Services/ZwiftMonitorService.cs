@@ -4,9 +4,12 @@ using Microsoft.Extensions.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using ZwiftTelemetryBrowserSource.Models;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using Newtonsoft.Json;
+using Microsoft.CognitiveServices.Speech;
+using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -99,15 +102,41 @@ namespace ZwiftTelemetryBrowserSource.Services
                     }
                 };
 
-                ZwiftPacketMonitor.IncomingChatMessageEvent += (s, e) => {
+                ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                     Logger.LogInformation($"CHAT: {e.Message.ToString()}");
+
+                    var config = SpeechConfig.FromSubscription("5d6bd565501b48a985df7435d820fed5", "eastus");
+                    config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3);
+                    config.SpeechSynthesisVoiceName = "en-GB-MiaNeural";
+                    //config.SpeechSynthesisVoiceName = "en-IE-EmilyNeural";
+                    
+                    byte[] buffer = new byte[10240];
+                    List<byte> b = new List<byte>();
+
+                    using (var synthesizer = new SpeechSynthesizer(config, null))
+                    {
+                        var result = await synthesizer.SpeakTextAsync(e.Message.Message);
+                        using (var stream = AudioDataStream.FromResult(result))
+                        {
+                            int bytesRead = (int)stream.ReadData(buffer);
+                            while (bytesRead > 0)
+                            {
+                                b.AddRange(buffer.Take(bytesRead));
+
+                                buffer = new byte[10240];
+                                bytesRead = (int)stream.ReadData(buffer);
+                            }
+                        }
+                    }
 
                     var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
                     {
                         PlayerId = e.Message.RiderId,
                         FirstName = e.Message.FirstName,
                         LastName = e.Message.LastName,
-                        Message = $"{e.Message.FirstName} {e.Message.LastName} says \"{e.Message.Message}\""
+                        Message = $"{e.Message.FirstName} {e.Message.LastName} says \"{e.Message.Message}\"",
+                        AudioSource = $"data:audio/x-mp3;base64,{Convert.ToBase64String(b.ToArray())}",
+                        Avatar = e.Message.Avatar
                     });
 
                     RideOnNotificationService.SendNotificationAsync(message, false).Wait();
@@ -125,7 +154,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                         PlayerId = e.RideOn.RiderId,
                         FirstName = e.RideOn.FirstName,
                         LastName = e.RideOn.LastName,
-                        Message = $"{e.RideOn.FirstName} {e.RideOn.LastName} gave you a ride on!"
+                        Message = $"{e.RideOn.FirstName} {e.RideOn.LastName} gave you a ride on!",
+                        AudioSource = "/audio/rockon.ogg"
                     });
 
                     RideOnNotificationService.SendNotificationAsync(message, false).Wait();
