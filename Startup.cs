@@ -8,6 +8,7 @@ using ZwiftPacketMonitor;
 using ZwiftTelemetryBrowserSource.Models;
 using Lib.AspNetCore.ServerSentEvents;
 using ZwiftTelemetryBrowserSource.Services;
+using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using System.Linq;
 
@@ -40,7 +41,8 @@ namespace ZwiftTelemetryBrowserSource
                 options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "text/event-stream" });
             });
 
-            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));        
+            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
+            services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
             services.AddSingleton<Monitor>();
 
             // Since this is a background service, we also need to inject it into other services
