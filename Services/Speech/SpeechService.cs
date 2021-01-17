@@ -19,7 +19,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
             Options = speechOptions.Value;
         }
 
-        public async Task<string> TTSAudioBase64(string message)
+        public async Task<string> GetAudioBase64(string message)
         {
             var config = SpeechConfig.FromSubscription(Options.SubscriptionKey, Options.Region);
             config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3);

@@ -43,10 +43,11 @@ namespace ZwiftTelemetryBrowserSource
 
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
+            services.AddTransient<SpeechService>();
             services.AddSingleton<Monitor>();
 
             // Since this is a background service, we also need to inject it into other services
-            services.AddSingleton<AverageTelemetryService>();
+            services.AddTransient<AverageTelemetryService>();
             services.AddHostedService<AverageTelemetryService>(provider => provider.GetService<AverageTelemetryService>());
 
             services.AddHostedService<ZwiftMonitorService>();

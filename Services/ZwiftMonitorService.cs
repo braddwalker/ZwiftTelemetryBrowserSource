@@ -112,7 +112,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                         FirstName = e.Message.FirstName,
                         LastName = e.Message.LastName,
                         Message = $"{e.Message.FirstName} {e.Message.LastName} says \"{e.Message.Message}\"",
-                        AudioSource = await SpeechService.TTSAudioBase64(e.Message.Message),
+                        AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
                         Avatar = e.Message.Avatar
                     });
 
