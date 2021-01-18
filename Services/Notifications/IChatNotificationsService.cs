@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 namespace ZwiftTelemetryBrowserSource.Services.Notifications
 {
-    public interface IRideOnNotificationService
+    public interface IChatNotificationsService
     {
         Task SendNotificationAsync(string notification);
     }

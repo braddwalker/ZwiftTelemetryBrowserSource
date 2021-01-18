@@ -30,7 +30,7 @@
     <script>
         var queue = new Array();
 
-        var source = new EventSource('/rideon');
+        var source = new EventSource('/notifications/chat');
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
             console.log(data);

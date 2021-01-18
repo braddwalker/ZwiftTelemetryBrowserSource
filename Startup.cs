@@ -10,6 +10,7 @@ using Lib.AspNetCore.ServerSentEvents;
 using ZwiftTelemetryBrowserSource.Services;
 using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
+using ZwiftTelemetryBrowserSource.Services.Alerts;
 using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource
@@ -25,9 +26,15 @@ namespace ZwiftTelemetryBrowserSource
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddTransient<INotificationsService, LocalNotificationsService>();
+            services.AddTransient<ITelemetryNotificationsService, TelemetryNotificationsService>();
             services.AddTransient<IRideOnNotificationService, RideOnNotificationService>();
-            services.AddServerSentEvents<INotificationsServerSentEventsService, NotificationsServerSentEventsService>(options =>
+            services.AddTransient<IChatNotificationsService, ChatNotificationsService>();
+
+            services.AddServerSentEvents<ITelemetryNotificationsSSEService, TelemetryNotificationsSSEService>(options =>
+            {
+                options.ReconnectInterval = 5000;
+            });
+            services.AddServerSentEvents<IChatNotificationsSSEService, ChatNotificationsSSEService>(options =>
             {
                 options.ReconnectInterval = 5000;
             });
@@ -41,16 +48,21 @@ namespace ZwiftTelemetryBrowserSource
                 options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "text/event-stream" });
             });
 
+            services.Configure<AlertsConfig>(Configuration.GetSection("Alerts"));
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
+            
             services.AddTransient<SpeechService>();
+            services.AddTransient<AlertsService>();
             services.AddSingleton<Monitor>();
+            services.AddHostedService<ZwiftMonitorService>();
 
             // Since this is a background service, we also need to inject it into other services
+            // This MUST remain singleton, otherwise you get different instances injected into other services
+            // which will break because this service requires state
             services.AddSingleton<AverageTelemetryService>();
             services.AddHostedService<AverageTelemetryService>(provider => provider.GetService<AverageTelemetryService>());
 
-            services.AddHostedService<ZwiftMonitorService>();
             services.AddControllersWithViews();
             services.AddLogging(builder => 
             {
@@ -74,8 +86,9 @@ namespace ZwiftTelemetryBrowserSource
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
                 
-                endpoints.MapServerSentEvents<NotificationsServerSentEventsService>("/notifications");
-                endpoints.MapServerSentEvents<RideOnNotificationsSSEService>("/rideon");
+                endpoints.MapServerSentEvents<TelemetryNotificationsSSEService>("/notifications/telemetry");
+                endpoints.MapServerSentEvents<RideOnNotificationsSSEService>("/notifications/rideon");
+                endpoints.MapServerSentEvents<ChatNotificationsSSEService>("/notifications/chat");
             });
         }
     }

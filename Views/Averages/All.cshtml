@@ -17,7 +17,7 @@
     </body>
 
     <script>
-        var source = new EventSource('/notifications');
+        var source = new EventSource('/notifications/telemetry');
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
             console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate + ', Avg Power: ' + data.AvgPower + ', Avg Speed: ' + data.AvgSpeed + ', Avg Cadence: ' + data.AvgCadence + ', Avg HR: ' + data.AvgHeartRate);

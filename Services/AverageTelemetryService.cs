@@ -166,7 +166,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// </summary>
         public void Reset()
         {
-            Logger.LogDebug("Resetting average telemetry");
+            Logger.LogDebug("Resetting telemetry");
             
             using (AsyncLock.Lock())
             {

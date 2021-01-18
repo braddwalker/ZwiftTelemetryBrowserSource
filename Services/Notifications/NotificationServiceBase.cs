@@ -19,11 +19,10 @@ namespace ZwiftTelemetryBrowserSource.Services.Notifications
         #endregion
 
         #region Methods
-        protected Task SendSseEventAsync(string notification, bool alert)
+        protected Task SendSseEventAsync(string notification)
         {
             return _notificationsServerSentEventsService.SendEventAsync(new ServerSentEvent
             {
-                Type = alert ? "alert" : null,
                 Data = new List<string>(notification.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None))
             });
         }

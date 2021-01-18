@@ -6,5 +6,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         public string SubscriptionKeyFile {get; set;}
         public string Region {get; set;}
         public string VoiceName {get; set;}
+
+        public bool ReadOwnMessages {get; set;}
     }
 }

@@ -1,0 +1,49 @@
+﻿<html>
+    <head>
+        <meta charset="UTF-8">
+        <script src="/js/howler.js"></script>
+        <style>
+        </style>
+    </head>
+    <body>
+    </body>
+
+    <script>
+        var queue = new Array();
+
+        var source = new EventSource('/notifications/rideon');
+        source.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            console.log(data);
+
+            queue.push(data);
+        };
+        source.onerror = function() {}
+
+        handleQueue();
+
+        function handleQueue()
+        {
+            data = queue.shift();
+            if (data)
+            {
+                var sound = new Howl({
+                    src: [data.AudioSource]
+                });
+
+                sound.play();
+                sound.on('loaderror', function() {
+                    console.log('sound error');
+                    handleQueue();
+                });
+                sound.on('end', function() {
+                    console.log('sound finished');
+                    setTimeout(function() { handleQueue(); }, 1500);
+                });
+            }
+            else {
+                setTimeout(function() { handleQueue(); }, 500);
+            }
+        }
+    </script>
+</html>

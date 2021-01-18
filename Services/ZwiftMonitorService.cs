@@ -1,12 +1,14 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
 using ZwiftTelemetryBrowserSource.Models;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Speech;
+using ZwiftTelemetryBrowserSource.Services.Alerts;
 using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
@@ -21,33 +23,49 @@ namespace ZwiftTelemetryBrowserSource.Services
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
             IConfiguration config,
-            INotificationsService notificationsService,
+            ITelemetryNotificationsService telemetryNotificationsService,
+            IChatNotificationsService chatNotificationsService,
             IRideOnNotificationService rideOnNotificationService,
             AverageTelemetryService averageTelemetryService,
-            SpeechService speechService) {
+            SpeechService speechService,
+            AlertsService alertsService,
+            IOptions<AlertsConfig> alertsConfig) {
 
             Config = config;
             Logger = logger;
             ZwiftPacketMonitor = zwiftPacketMonitor;
-            NotificationsService = notificationsService;
+            TelemetryNotificationsService = telemetryNotificationsService;
+            ChatNotificationsService = chatNotificationsService;
             RideOnNotificationService = rideOnNotificationService;
             AverageTelemetryService = averageTelemetryService;
             SpeechService = speechService;
+            AlertsService = alertsService;
+            AlertsConfig = alertsConfig.Value;
         }
 
-        private INotificationsService NotificationsService {get;}
+        private ITelemetryNotificationsService TelemetryNotificationsService {get;}
+        private IChatNotificationsService ChatNotificationsService {get;}
         private IRideOnNotificationService RideOnNotificationService {get;}
         private IConfiguration Config {get;}
         private ILogger<ZwiftMonitorService> Logger {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
         private AverageTelemetryService AverageTelemetryService {get;}
         private SpeechService SpeechService {get;}
+        private AlertsService AlertsService {get;}
+        private AlertsConfig AlertsConfig {get;}
         
-        // For debugging purposes only
-        private int trackedPlayerId;
+        // The Zwift ID of the player being tracked. This is either
+        // YOU the actual rider, or another rider chosen at random for debug mode
+        private int currentRiderId;
         
         // This is used to track when a player enters/leaves an event
         private int currentGroupId;
+
+        public override async Task StopAsync(CancellationToken cancellationToken)
+        {
+            Logger.LogInformation("Stopping ZwiftMonitorService");
+            await ZwiftPacketMonitor.StopCaptureAsync();
+        }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -65,9 +83,9 @@ namespace ZwiftTelemetryBrowserSource.Services
                 ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
                     try 
                     {               
-                        if ((trackedPlayerId == 0) || (trackedPlayerId == e.PlayerState.Id))
+                        if ((currentRiderId == 0) || (currentRiderId == e.PlayerState.Id))
                         {
-                            trackedPlayerId = e.PlayerState.Id;
+                            currentRiderId = e.PlayerState.Id;
                             DispatchPlayerStateUpdate(e.PlayerState);
                         }
                     }
@@ -78,10 +96,13 @@ namespace ZwiftTelemetryBrowserSource.Services
             }
             else {
                 // Under normal circumstances we will only be dispatching telemetry data from OUTGOING
-                // packets, which represent YOU, that are being sent out to the Zwift servers.
+                // packets, which represent YOU, that are being sent to the Zwift servers.
                 ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                     try 
                     {
+                        // Need to hang on to this for later
+                        currentRiderId = e.PlayerState.Id;
+
                         DispatchPlayerStateUpdate(e.PlayerState);
 
                         // See if we need to trigger an event/world changed
@@ -90,7 +111,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                             Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
                             currentGroupId = e.PlayerState.GroupId;
 
-                            // If we are entering an event, aways reset
+                            // If we are entering an event, aways reset average telemetry
                             // If we are leaving an event, let the config decide
                             if ((e.PlayerState.GroupId != 0) 
                                 || (e.PlayerState.GroupId == 0 && Config.GetValue<bool>("ResetAveragesOnEventFinish")))
@@ -108,19 +129,23 @@ namespace ZwiftTelemetryBrowserSource.Services
                     // Only process chat messages when they come from the same group we're currently in
                     if (e.Message.EventSubgroup == currentGroupId)
                     {
-                        Logger.LogInformation($"CHAT: {e.Message.ToString()}");
-
-                        var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                        // See if we're configured to read own messages if this came from us
+                        if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
                         {
-                            PlayerId = e.Message.RiderId,
-                            FirstName = e.Message.FirstName,
-                            LastName = e.Message.LastName,
-                            Message = e.Message.Message,
-                            AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
-                            Avatar = e.Message.Avatar
-                        });
+                            Logger.LogInformation($"CHAT: {e.Message.ToString()}");
 
-                        RideOnNotificationService.SendNotificationAsync(message, false).Wait();
+                            var message = JsonConvert.SerializeObject(new ChatNotificationModel()
+                            {
+                                RiderId = e.Message.RiderId,
+                                FirstName = e.Message.FirstName,
+                                LastName = e.Message.LastName,
+                                Message = e.Message.Message,
+                                AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
+                                Avatar = e.Message.Avatar
+                            });
+
+                            ChatNotificationsService.SendNotificationAsync(message).Wait();
+                        }
                     }
                 };
 
@@ -133,14 +158,13 @@ namespace ZwiftTelemetryBrowserSource.Services
 
                     var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
                     {
-                        PlayerId = e.RideOn.RiderId,
+                        RiderId = e.RideOn.RiderId,
                         FirstName = e.RideOn.FirstName,
                         LastName = e.RideOn.LastName,
-                        Message = $"{e.RideOn.FirstName} {e.RideOn.LastName} gave you a ride on!",
                         AudioSource = "/audio/rockon.ogg"
                     });
 
-                    RideOnNotificationService.SendNotificationAsync(message, false).Wait();
+                    RideOnNotificationService.SendNotificationAsync(message).Wait();
                 };
             }
 
@@ -161,13 +185,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 AvgCadence = summary.Cadence
             });
 
-            NotificationsService.SendNotificationAsync(telemetry, false).Wait();
-        }
-
-        public override async Task StopAsync(CancellationToken cancellationToken)
-        {
-            Logger.LogInformation("Stopping ZwiftMonitorService");
-            await ZwiftPacketMonitor.StopCaptureAsync();
+            TelemetryNotificationsService.SendNotificationAsync(telemetry).Wait();
         }
     }
 }
