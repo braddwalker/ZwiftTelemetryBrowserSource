@@ -87,6 +87,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                         // See if we need to trigger an event/world changed
                         if (currentGroupId != e.PlayerState.GroupId)
                         {
+                            Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
                             currentGroupId = e.PlayerState.GroupId;
 
                             // If we are entering an event, aways reset
@@ -104,19 +105,23 @@ namespace ZwiftTelemetryBrowserSource.Services
                 };
 
                 ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
-                    Logger.LogInformation($"CHAT: {e.Message.ToString()}");
-
-                    var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                    // Only process chat messages when they come from the same group we're currently in
+                    if (e.Message.EventSubgroup == currentGroupId)
                     {
-                        PlayerId = e.Message.RiderId,
-                        FirstName = e.Message.FirstName,
-                        LastName = e.Message.LastName,
-                        Message = $"{e.Message.FirstName} {e.Message.LastName} says \"{e.Message.Message}\"",
-                        AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
-                        Avatar = e.Message.Avatar
-                    });
+                        Logger.LogInformation($"CHAT: {e.Message.ToString()}");
 
-                    RideOnNotificationService.SendNotificationAsync(message, false).Wait();
+                        var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                        {
+                            PlayerId = e.Message.RiderId,
+                            FirstName = e.Message.FirstName,
+                            LastName = e.Message.LastName,
+                            Message = e.Message.Message,
+                            AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
+                            Avatar = e.Message.Avatar
+                        });
+
+                        RideOnNotificationService.SendNotificationAsync(message, false).Wait();
+                    }
                 };
 
                 ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {

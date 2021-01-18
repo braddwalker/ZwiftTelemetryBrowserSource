@@ -29,29 +29,56 @@
     </body>
 
     <script>
+        var queue = new Array();
+
         var source = new EventSource('/rideon');
         source.onmessage = function (event) {
             var data = JSON.parse(event.data);
             console.log(data);
 
-            if (data.Avatar)
-            {
-                document.getElementById("avatar").src = data.Avatar;
-                document.getElementById("chat").style.display = 'block';
-            }
-            else 
-            {
-                document.getElementById("chat").style.display = 'none';
-            }
-
-            var sound = new Howl({
-                src: [data.AudioSource]
-            });
-            sound.play();
-            sound.on('end', function() {
-                setTimeout(function() { document.getElementById("chat").style.display = 'none'; }, 3000);
-            });
+            queue.push(data);
         };
         source.onerror = function() {}
+
+        handleQueue();
+
+        function handleQueue()
+        {
+            data = queue.shift();
+            if (data)
+            {
+                document.getElementById("chat").style.display = 'none';
+
+                var sound = new Howl({
+                    src: [data.AudioSource]
+                });
+
+                sound.play();
+                sound.on('load', function() {
+                    if (data.Avatar)
+                    {
+                        document.getElementById("avatar").src = data.Avatar;
+                        document.getElementById("chat").style.display = 'block';
+                    }
+                });
+                sound.on('loaderror', function() {
+                    console.log('sound error');
+                    finalizeTTS();
+                });
+                sound.on('end', function() {
+                    console.log('sound finished');
+                    setTimeout(function() { finalizeTTS(); }, 1500);
+                });
+            }
+            else {
+                setTimeout(function() { handleQueue(); }, 500);
+            }
+        }
+
+        function finalizeTTS()
+        {
+            document.getElementById("chat").style.display = 'none';
+            handleQueue();
+        }
     </script>
 </html>
