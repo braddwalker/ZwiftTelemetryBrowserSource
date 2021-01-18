@@ -33,8 +33,6 @@ namespace ZwiftTelemetryBrowserSource.Services
 
         public AvgSummary AvgSummary;
 
-        private AsyncAutoResetEvent AsyncAutoResetEvent;
-
         private AsyncLock AsyncLock;
 
         public AverageTelemetryService(ILogger<AverageTelemetryService> logger) 
@@ -51,14 +49,13 @@ namespace ZwiftTelemetryBrowserSource.Services
             IntermediateHeartrateData = new List<AvgHeartrateData>();
 
             AvgSummary = new AvgSummary();
-            AsyncAutoResetEvent = new AsyncAutoResetEvent(false);
             AsyncLock = new AsyncLock();
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             try {
-                Logger.LogInformation("Starting AveragePowerService");
+                Logger.LogInformation("Starting AverageTelemetryService");
 
                 await Task.Run(async () => 
                 {
@@ -81,16 +78,16 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 // prevents us from accumulating this intermediate
                                 // data unbounded in memory
                                 ipd = IntermediatePowerData.ToList();
-                                IntermediatePowerData.Clear();
+                                IntermediatePowerData = new List<AvgPowerData>();
 
                                 isd = IntermediateSpeedData.ToList();
-                                IntermediateSpeedData.Clear();
+                                IntermediateSpeedData = new List<AvgSpeedData>();
 
                                 icd = IntermediateCadenceData.ToList();
-                                IntermediateCadenceData.Clear();
+                                IntermediateCadenceData = new List<AvgCadenceData>();
 
                                 ihd = IntermediateHeartrateData.ToList();
-                                IntermediateHeartrateData.Clear();
+                                IntermediateHeartrateData = new List<AvgHeartrateData>();
                             }
 
                             // Loop through the intermedia data sets, normalize them down 
@@ -148,8 +145,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 AvgSummary.Heartrate = HeartrateData.Sum(x => x.Heartrate) / HeartrateData.Count();
                             }
 
-                            // Wait here until new data arrives to calculate
-                            await AsyncAutoResetEvent.WaitAsync(cancellationToken);
+                            await Task.Delay(3000, cancellationToken);
                         }
                         catch (TaskCanceledException) {}
                         catch (Exception e) {
@@ -195,25 +191,15 @@ namespace ZwiftTelemetryBrowserSource.Services
                 if (state.Speed > 0)
                 {
                     IntermediatePowerData.Add(new AvgPowerData() { Power = state.Power });
+                    IntermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
 
                     // convert speed from mm/hr to mi/hr
                     IntermediateSpeedData.Add(new AvgSpeedData() { Speed = (int)(state.Speed / 1609000) });
                     
                     // convert cadence from uHz to rpm
                     IntermediateCadenceData.Add(new AvgCadenceData() { Cadence = (int)(state.CadenceUHz * 0.00006) });
-                    IntermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
                 }
-
-                // convert speed from mm/hr to mi/hr
-                IntermediateSpeedData.Add(new AvgSpeedData() { Speed = (int)(state.Speed / 1609000) });
-                
-                // convert cadence from uHz to rpm
-                IntermediateCadenceData.Add(new AvgCadenceData() { Cadence = (int)(state.CadenceUHz * 0.00006) });
-                IntermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
             }
-                
-            // Signal to the background thread that new data has arrived
-            AsyncAutoResetEvent.Set();
 
             return (AvgSummary);
         }
