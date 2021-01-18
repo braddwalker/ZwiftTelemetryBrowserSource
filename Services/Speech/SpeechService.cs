@@ -22,11 +22,9 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
 
             if (Options.Enabled) 
             {
-                logger.LogInformation("Speech service enabled");
-
-                var file = Path.Combine(Directory.GetCurrentDirectory(), Options.SubscriptionKeyFile);
-                SubscriptionKey = File.ReadAllText(file).Trim();
-                logger.LogInformation($"Azure key loaded from {file}");
+                Logger.LogInformation("Speech service enabled");
+                SubscriptionKey = File.ReadAllText(Options.SubscriptionKeyFile).Trim();
+                Logger.LogInformation($"Azure key loaded from {new FileInfo(Options.SubscriptionKeyFile).FullName}");
             }
         }
 

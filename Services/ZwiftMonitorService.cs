@@ -9,6 +9,7 @@ using ZwiftTelemetryBrowserSource.Models;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
+using ZwiftTelemetryBrowserSource.Services.Twitch;
 using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
@@ -29,7 +30,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             AverageTelemetryService averageTelemetryService,
             SpeechService speechService,
             AlertsService alertsService,
-            IOptions<AlertsConfig> alertsConfig) {
+            IOptions<AlertsConfig> alertsConfig,
+            TwitchIrcService twitchIrcService) {
 
             Config = config;
             Logger = logger;
@@ -41,6 +43,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             SpeechService = speechService;
             AlertsService = alertsService;
             AlertsConfig = alertsConfig.Value;
+            TwitchIrcService = twitchIrcService;
         }
 
         private ITelemetryNotificationsService TelemetryNotificationsService {get;}
@@ -53,6 +56,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         private SpeechService SpeechService {get;}
         private AlertsService AlertsService {get;}
         private AlertsConfig AlertsConfig {get;}
+        private TwitchIrcService TwitchIrcService {get;}
         
         // The Zwift ID of the player being tracked. This is either
         // YOU the actual rider, or another rider chosen at random for debug mode
@@ -165,6 +169,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                     });
 
                     RideOnNotificationService.SendNotificationAsync(message).Wait();
+
+                    TwitchIrcService.SendPublicChatMessage($"Thanks for the RideOn, {e.RideOn.FirstName} {e.RideOn.LastName}!");
                 };
             }
 

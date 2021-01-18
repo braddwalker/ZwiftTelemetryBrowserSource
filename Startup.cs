@@ -11,6 +11,7 @@ using ZwiftTelemetryBrowserSource.Services;
 using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
+using ZwiftTelemetryBrowserSource.Services.Twitch;
 using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource
@@ -48,6 +49,7 @@ namespace ZwiftTelemetryBrowserSource
                 options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "text/event-stream" });
             });
 
+            services.Configure<TwitchConfig>(Configuration.GetSection("Twitch"));
             services.Configure<AlertsConfig>(Configuration.GetSection("Alerts"));
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
@@ -55,6 +57,8 @@ namespace ZwiftTelemetryBrowserSource
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
             services.AddSingleton<Monitor>();
+            services.AddSingleton<TwitchIrcService>();
+            services.AddHostedService<TwitchIrcPingService>();
             services.AddHostedService<ZwiftMonitorService>();
 
             // Since this is a background service, we also need to inject it into other services
