@@ -47,7 +47,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
             IrcClient = new IrcDotNet.TwitchIrcClient();
             IrcClient.FloodPreventer = new IrcStandardFloodPreventer(4, 2000);
             IrcClient.Disconnected += (s,e) => {
-                Logger.LogWarning("Twitch IRC disconnected");
+                Logger.LogDebug("Twitch IRC disconnected");
 
                 // Attempt to reconnect so long as we're not shutting down
                 if (!shutdown)

@@ -46,28 +46,35 @@
             data = queue.shift();
             if (data)
             {
-                document.getElementById("chat").style.display = 'none';
+                try 
+                {
+                    document.getElementById("chat").style.display = 'none';
 
-                var sound = new Howl({
-                    src: [data.AudioSource]
-                });
+                    var sound = new Howl({
+                        src: [data.AudioSource]
+                    });
 
-                sound.play();
-                sound.on('load', function() {
-                    if (data.Avatar)
-                    {
-                        document.getElementById("avatar").src = data.Avatar;
-                        document.getElementById("chat").style.display = 'block';
-                    }
-                });
-                sound.on('loaderror', function() {
-                    console.log('sound error');
-                    finalizeTTS();
-                });
-                sound.on('end', function() {
-                    console.log('sound finished');
+                    sound.play();
+                    sound.on('load', function() {
+                        if (data.Avatar)
+                        {
+                            document.getElementById("avatar").src = data.Avatar;
+                            document.getElementById("chat").style.display = 'block';
+                        }
+                    });
+                    sound.on('loaderror', function() {
+                        console.log('sound error');
+                        finalizeTTS();
+                    });
+                    sound.on('end', function() {
+                        console.log('sound finished');
+                        setTimeout(function() { finalizeTTS(); }, 500);
+                    });
+                }
+                catch
+                {
                     setTimeout(function() { finalizeTTS(); }, 500);
-                });
+                }
             }
             else {
                 setTimeout(function() { handleQueue(); }, 500);
