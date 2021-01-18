@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,16 +13,21 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
     {
         private readonly ILogger<SpeechService> Logger;
         private readonly SpeechOptions Options;
+        private readonly string SubscriptionKey;
 
         public SpeechService(ILogger<SpeechService> logger, IOptions<SpeechOptions> speechOptions)
         {
             Logger = logger;
             Options = speechOptions.Value;
+
+            SubscriptionKey = File.ReadAllText(Options.SubscriptionKeyFile).Trim();
+
+            logger.LogInformation($"Azure key loaded from {Options.SubscriptionKeyFile}");
         }
 
         public async Task<string> GetAudioBase64(string message)
         {
-            var config = SpeechConfig.FromSubscription(Options.SubscriptionKey, Options.Region);
+            var config = SpeechConfig.FromSubscription(SubscriptionKey, Options.Region);
             config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3);
             config.SpeechSynthesisVoiceName = Options.VoiceName;
             
