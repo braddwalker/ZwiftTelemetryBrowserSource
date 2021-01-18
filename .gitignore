@@ -2,5 +2,5 @@
 /bin
 /obj
 .DS_Store
-/key.txt
-/twitch.txt
+/azure-key.txt
+/twitch-key.txt

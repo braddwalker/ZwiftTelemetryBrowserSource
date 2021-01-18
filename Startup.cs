@@ -58,7 +58,6 @@ namespace ZwiftTelemetryBrowserSource
             services.AddTransient<AlertsService>();
             services.AddSingleton<Monitor>();
             services.AddSingleton<TwitchIrcService>();
-            services.AddHostedService<TwitchIrcPingService>();
             services.AddHostedService<ZwiftMonitorService>();
 
             // Since this is a background service, we also need to inject it into other services
@@ -66,6 +65,12 @@ namespace ZwiftTelemetryBrowserSource
             // which will break because this service requires state
             services.AddSingleton<AverageTelemetryService>();
             services.AddHostedService<AverageTelemetryService>(provider => provider.GetService<AverageTelemetryService>());
+
+            // Since this is a background service, we also need to inject it into other services
+            // This MUST remain singleton, otherwise you get different instances injected into other services
+            // which will break because this service requires state
+            services.AddSingleton<TwitchIrcService>();
+            services.AddHostedService<TwitchIrcService>(provider => provider.GetService<TwitchIrcService>());
 
             services.AddControllersWithViews();
             services.AddLogging(builder => 

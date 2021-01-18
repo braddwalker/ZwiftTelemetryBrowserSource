@@ -130,8 +130,9 @@ namespace ZwiftTelemetryBrowserSource.Services
                 };
 
                 ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
-                    // Only process chat messages when they come from the same group we're currently in
-                    if (e.Message.EventSubgroup == currentGroupId)
+                    // Depending on config, we may or may not want to alert chat messages from
+                    // nearby players who are in other events
+                    if (AlertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == currentGroupId))
                     {
                         // See if we're configured to read own messages if this came from us
                         if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
@@ -145,7 +146,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 LastName = e.Message.LastName,
                                 Message = e.Message.Message,
                                 AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
-                                Avatar = e.Message.Avatar
+                                Avatar = GetRiderProfileImage(e.Message.Avatar)
                             });
 
                             ChatNotificationsService.SendNotificationAsync(message).Wait();
@@ -170,11 +171,23 @@ namespace ZwiftTelemetryBrowserSource.Services
 
                     RideOnNotificationService.SendNotificationAsync(message).Wait();
 
-                    TwitchIrcService.SendPublicChatMessage($"Thanks for the RideOn, {e.RideOn.FirstName} {e.RideOn.LastName}!");
+                    TwitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
                 };
             }
 
             await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"), cancellationToken);
+        }
+
+        private string GetRiderProfileImage(string avatarUrl)
+        {
+            if (AlertsConfig.Chat.ShowProfileImage)
+            {
+                return (string.IsNullOrWhiteSpace(avatarUrl) ? "/images/avatar.jpg" : avatarUrl);
+            }
+            else 
+            {
+                return ("");
+            }
         }
 
         private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {

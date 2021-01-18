@@ -7,5 +7,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
         public string ChannelName {get; set;}
         public string IrcServer {get; set;}
         public int IrcPort {get; set;}
+
+        public string Username {get; set;}
     }
 }
