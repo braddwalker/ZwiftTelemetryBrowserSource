@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
@@ -20,13 +21,17 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
 
         private ManualResetEventSlim connectedEvent;
         private ManualResetEventSlim registeredEvent;
-        private bool shutdown ;
+        private bool shutdown;
+
+        private ConcurrentQueue<string> messageQueue;
+        
 
         public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig)
         {
             TwitchConfig = twitchConfig.Value;
             Logger = logger;
             shutdown = false;
+            messageQueue = new ConcurrentQueue<string>();
 
             if (TwitchConfig.Enabled)
             {
@@ -73,6 +78,25 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
 
             ConnectIrc(cancellationToken);
 
+            // Startup the message posting queue
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                string message = null;
+                while (messageQueue.TryDequeue(out message))
+                {
+                    try
+                    {
+                        Logger.LogDebug($"SendPublicChatMessage: {message}");
+                        IrcClient.LocalUser.SendMessage($"#{TwitchConfig.ChannelName.ToLower()}", message);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "SendPublicChatMessage");
+                    }
+                }
+
+                await Task.Delay(1000);
+            }
             await Task.CompletedTask;
         }
 
@@ -134,16 +158,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
             if (!TwitchConfig.Enabled)
                 return;
 
-            Logger.LogDebug($"SendPublicChatMessage: {message}");
-
-            try
-            {
-                IrcClient.LocalUser.SendMessage($"#{TwitchConfig.ChannelName.ToLower()}", message);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "SendPublicChatMessage");
-            }
+            messageQueue.Enqueue(message);
         }
     }
 }
