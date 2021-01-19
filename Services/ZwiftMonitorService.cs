@@ -5,6 +5,8 @@ using Microsoft.Extensions.Options;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
+using System.Globalization;
+using ZwiftTelemetryBrowserSource.Util;
 using ZwiftTelemetryBrowserSource.Models;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Speech;
@@ -137,7 +139,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                         // See if we're configured to read own messages if this came from us
                         if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
                         {
-                            Logger.LogInformation($"CHAT: {e.Message.ToString()}");
+                            Logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
                             var message = JsonConvert.SerializeObject(new ChatNotificationModel()
                             {
@@ -146,7 +148,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 LastName = e.Message.LastName,
                                 Message = e.Message.Message,
                                 AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
-                                Avatar = GetRiderProfileImage(e.Message.Avatar)
+                                Avatar = GetRiderProfileImage(e.Message.Avatar),
+                                CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)
                             });
 
                             ChatNotificationsService.SendNotificationAsync(message).Wait();

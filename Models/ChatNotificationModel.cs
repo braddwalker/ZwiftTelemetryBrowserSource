@@ -10,5 +10,7 @@ namespace ZwiftTelemetryBrowserSource.Models
         public string AudioSource {get; set;}
 
         public string Avatar {get; set;}
+
+        public string CountryCode {get; set;}
     }
 }

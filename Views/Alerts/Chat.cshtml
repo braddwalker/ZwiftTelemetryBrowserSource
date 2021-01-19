@@ -5,6 +5,11 @@
         <script src="/js/howler.js"></script>
 
         <style>
+            #chat {
+                display: none;
+                width: 100px;
+            }
+            
             #speakerDiv {
                 position: absolute;
                 top: -10px;
@@ -18,12 +23,20 @@
                 left: 0px;
                 z-index: -1
             }
+
+            #flagDiv {
+                position: absolute;
+                z-index: 0;
+                top: 80px;
+                left: 77px;
+            }
         </style>
     </head>
     <body>
-        <div id="chat" style="display:none;">
+        <div id="chat">
             <div id="speakerDiv"><img id="speaker" src="/images/speaker.gif" width="50"></div>
             <div id="avatarDiv"><img id="avatar" width="100"></div>
+            <div id="flagDiv"><img id="flag" width="20"></div>
         </div>
     </body>
 
@@ -56,6 +69,15 @@
 
                     sound.play();
                     sound.on('load', function() {
+                        if (data.CountryCode) 
+                        {
+                            document.getElementById("flag").src = '/images/flags/' + data.CountryCode + '.svg';
+                        }
+                        else
+                        {
+                            document.getElementById("flag").src = '';
+                        }
+
                         if (data.Avatar)
                         {
                             document.getElementById("avatar").src = data.Avatar;
