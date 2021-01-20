@@ -30,7 +30,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             IChatNotificationsService chatNotificationsService,
             IRideOnNotificationService rideOnNotificationService,
             AverageTelemetryService averageTelemetryService,
-            SpeechService speechService,
+            ZwiftTTSService zwiftTTSService,
             AlertsService alertsService,
             IOptions<AlertsConfig> alertsConfig,
             TwitchIrcService twitchIrcService) {
@@ -42,7 +42,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             ChatNotificationsService = chatNotificationsService;
             RideOnNotificationService = rideOnNotificationService;
             AverageTelemetryService = averageTelemetryService;
-            SpeechService = speechService;
+            SpeechService = zwiftTTSService;
             AlertsService = alertsService;
             AlertsConfig = alertsConfig.Value;
             TwitchIrcService = twitchIrcService;
@@ -55,7 +55,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         private ILogger<ZwiftMonitorService> Logger {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
         private AverageTelemetryService AverageTelemetryService {get;}
-        private SpeechService SpeechService {get;}
+        private ZwiftTTSService SpeechService {get;}
         private AlertsService AlertsService {get;}
         private AlertsConfig AlertsConfig {get;}
         private TwitchIrcService TwitchIrcService {get;}
@@ -117,6 +117,9 @@ namespace ZwiftTelemetryBrowserSource.Services
                             Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
                             currentGroupId = e.PlayerState.GroupId;
 
+                            // Reset the speech service voices since we're in a new world
+                            SpeechService.ResetVoices();
+
                             // If we are entering an event, aways reset average telemetry
                             // If we are leaving an event, let the config decide
                             if ((e.PlayerState.GroupId != 0) 
@@ -134,22 +137,23 @@ namespace ZwiftTelemetryBrowserSource.Services
                 ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                     // Depending on config, we may or may not want to alert chat messages from
                     // nearby players who are in other events
-                    if (AlertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == currentGroupId))
+                    if (AlertsConfig.Chat.AlertOtherEvents || currentGroupId == 0 || (e.Message.EventSubgroup == currentGroupId))
                     {
                         // See if we're configured to read own messages if this came from us
                         if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
                         {
                             Logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
+                            var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
                             var message = JsonConvert.SerializeObject(new ChatNotificationModel()
                             {
                                 RiderId = e.Message.RiderId,
                                 FirstName = e.Message.FirstName,
                                 LastName = e.Message.LastName,
                                 Message = e.Message.Message,
-                                AudioSource = await SpeechService.GetAudioBase64(e.Message.Message),
+                                AudioSource = await SpeechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
                                 Avatar = GetRiderProfileImage(e.Message.Avatar),
-                                CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)
+                                CountryCode = countryCode
                             });
 
                             ChatNotificationsService.SendNotificationAsync(message).Wait();

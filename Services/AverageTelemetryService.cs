@@ -116,11 +116,11 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 }
                             }
 
-                            foreach (var c in icd) 
+                            foreach (var h in ihd) 
                             {
-                                if (!CadenceData.Contains(c))
+                                if (!HeartrateData.Contains(h))
                                 {
-                                    CadenceData.Add(c);
+                                    HeartrateData.Add(h);
                                 }
                             }
 
@@ -145,7 +145,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                                 AvgSummary.Heartrate = HeartrateData.Sum(x => x.Heartrate) / HeartrateData.Count();
                             }
 
-                            await Task.Delay(3000, cancellationToken);
+                            // We'll recalculate averages ever 5 seconds
+                            await Task.Delay(5000, cancellationToken);
                         }
                         catch (TaskCanceledException) {}
                         catch (Exception e) {

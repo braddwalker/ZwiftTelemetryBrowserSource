@@ -1,0 +1,9 @@
+<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" version="1.0" xml:lang="en-US">
+  <voice name="{voiceName}">
+    <prosody rate="{speed}">
+        <mstts:express-as style="chat">
+            {message}
+        </mstts:express-as>
+    </prosody>
+  </voice>
+</speak>

@@ -53,7 +53,8 @@ namespace ZwiftTelemetryBrowserSource
             services.Configure<AlertsConfig>(Configuration.GetSection("Alerts"));
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
-            
+
+            services.AddTransient<ZwiftTTSService>();
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
             services.AddSingleton<Monitor>();
