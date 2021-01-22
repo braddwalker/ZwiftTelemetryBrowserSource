@@ -33,6 +33,9 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         /// </summary>
         public void ResetVoices()
         {
+            if (!speechConfig.Enabled)
+                return;
+
             logger.LogDebug("Resetting voice assignments");
             riderVoices = new Dictionary<int, string>();
         }
@@ -48,6 +51,9 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         /// <returns>A Base64 encoded audio stream</returns>
         public async Task<string> GetAudioBase64(int riderId, string message, string countryCode)
         {
+            if (!speechConfig.Enabled)
+                return (null);
+
             var voiceName = speechConfig.DefaultVoiceName;
 
             // See if we've already assigned a voice to this rider

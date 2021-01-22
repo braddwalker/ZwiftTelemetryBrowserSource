@@ -14,10 +14,10 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
     {
         private const string SSML_TEMPLATE = "ssml_template.xml";
         private const double SPEECH_SPEED = 1.20;
+
         private readonly ILogger<SpeechService> Logger;
         private readonly SpeechOptions Options;
         private readonly string SubscriptionKey;
-
         private readonly string ssmlTemplate;
 
         public SpeechService(ILogger<SpeechService> logger, IOptions<SpeechOptions> speechOptions)

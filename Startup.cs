@@ -54,10 +54,10 @@ namespace ZwiftTelemetryBrowserSource
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
 
+            services.AddZwiftPacketMonitoring();
             services.AddTransient<ZwiftTTSService>();
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
-            services.AddSingleton<Monitor>();
             services.AddSingleton<TwitchIrcService>();
             services.AddHostedService<ZwiftMonitorService>();
 

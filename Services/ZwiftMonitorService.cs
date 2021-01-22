@@ -31,7 +31,6 @@ namespace ZwiftTelemetryBrowserSource.Services
             IRideOnNotificationService rideOnNotificationService,
             AverageTelemetryService averageTelemetryService,
             ZwiftTTSService zwiftTTSService,
-            AlertsService alertsService,
             IOptions<AlertsConfig> alertsConfig,
             TwitchIrcService twitchIrcService) {
 
@@ -43,7 +42,6 @@ namespace ZwiftTelemetryBrowserSource.Services
             RideOnNotificationService = rideOnNotificationService;
             AverageTelemetryService = averageTelemetryService;
             SpeechService = zwiftTTSService;
-            AlertsService = alertsService;
             AlertsConfig = alertsConfig.Value;
             TwitchIrcService = twitchIrcService;
         }
@@ -56,7 +54,6 @@ namespace ZwiftTelemetryBrowserSource.Services
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
         private AverageTelemetryService AverageTelemetryService {get;}
         private ZwiftTTSService SpeechService {get;}
-        private AlertsService AlertsService {get;}
         private AlertsConfig AlertsConfig {get;}
         private TwitchIrcService TwitchIrcService {get;}
         
@@ -77,110 +74,83 @@ namespace ZwiftTelemetryBrowserSource.Services
         {
             Logger.LogInformation("Starting ZwiftMonitorService");
 
-            // Debug mode will operate a little differently than the regular game mode.
-            // When debug mode is on, we'll pick the first INCOMING player's data to use, and will lock
-            // onto that PlayerId to filter out subsequent updates. This makes the testing more consistent. 
-            // This way it's possible to test event dispatch w/o having to be on the bike with power meter 
-            // and heart rate strap actually connected and outputting data.
-            if (Config.GetValue<bool>("Debug"))
-            {
-                Logger.LogInformation("Debug mode enabled");
+            ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
+                try 
+                {
+                    // Need to hang on to this for later
+                    currentRiderId = e.PlayerState.Id;
 
-                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
-                    try 
-                    {               
-                        if ((currentRiderId == 0) || (currentRiderId == e.PlayerState.Id))
+                    DispatchPlayerStateUpdate(e.PlayerState);
+
+                    // See if we need to trigger an event/world changed
+                    if (currentGroupId != e.PlayerState.GroupId)
+                    {
+                        Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
+                        currentGroupId = e.PlayerState.GroupId;
+
+                        // Reset the speech service voices since we're in a new world
+                        SpeechService.ResetVoices();
+
+                        // If we are entering an event, aways reset average telemetry
+                        // If we are leaving an event, let the config decide
+                        if ((e.PlayerState.GroupId != 0) 
+                            || (e.PlayerState.GroupId == 0 && Config.GetValue<bool>("ResetAveragesOnEventFinish")))
                         {
-                            currentRiderId = e.PlayerState.Id;
-                            DispatchPlayerStateUpdate(e.PlayerState);
+                            AverageTelemetryService.Reset();   
                         }
                     }
-                    catch (Exception ex) {
-                        Logger.LogError(ex, "IncomingPlayerEvent");
-                    }
-                };
-            }
-            else {
-                // Under normal circumstances we will only be dispatching telemetry data from OUTGOING
-                // packets, which represent YOU, that are being sent to the Zwift servers.
-                ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
-                    try 
+                }
+                catch (Exception ex) {
+                    Logger.LogError(ex, "OutgoingPlayerEvent");
+                }
+            };
+
+            ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
+                // Depending on config, we may or may not want to alert chat messages from
+                // nearby players who are in other events
+                if (AlertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == currentGroupId))
+                {
+                    // See if we're configured to read own messages if this came from us
+                    if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
                     {
-                        // Need to hang on to this for later
-                        currentRiderId = e.PlayerState.Id;
+                        Logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
-                        DispatchPlayerStateUpdate(e.PlayerState);
-
-                        // See if we need to trigger an event/world changed
-                        if (currentGroupId != e.PlayerState.GroupId)
+                        var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
+                        var message = JsonConvert.SerializeObject(new ChatNotificationModel()
                         {
-                            Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
-                            currentGroupId = e.PlayerState.GroupId;
+                            RiderId = e.Message.RiderId,
+                            FirstName = e.Message.FirstName,
+                            LastName = e.Message.LastName,
+                            Message = e.Message.Message,
+                            AudioSource = await SpeechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
+                            Avatar = GetRiderProfileImage(e.Message.Avatar),
+                            CountryCode = countryCode
+                        });
 
-                            // Reset the speech service voices since we're in a new world
-                            SpeechService.ResetVoices();
-
-                            // If we are entering an event, aways reset average telemetry
-                            // If we are leaving an event, let the config decide
-                            if ((e.PlayerState.GroupId != 0) 
-                                || (e.PlayerState.GroupId == 0 && Config.GetValue<bool>("ResetAveragesOnEventFinish")))
-                            {
-                                AverageTelemetryService.Reset();   
-                            }
-                        }
+                        ChatNotificationsService.SendNotificationAsync(message).Wait();
                     }
-                    catch (Exception ex) {
-                        Logger.LogError(ex, "OutgoingPlayerEvent");
-                    }
-                };
+                }
+            };
 
-                ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
-                    // Depending on config, we may or may not want to alert chat messages from
-                    // nearby players who are in other events
-                    if (AlertsConfig.Chat.AlertOtherEvents || currentGroupId == 0 || (e.Message.EventSubgroup == currentGroupId))
-                    {
-                        // See if we're configured to read own messages if this came from us
-                        if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
-                        {
-                            Logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
+            ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
+                //Logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
+            };
 
-                            var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
-                            var message = JsonConvert.SerializeObject(new ChatNotificationModel()
-                            {
-                                RiderId = e.Message.RiderId,
-                                FirstName = e.Message.FirstName,
-                                LastName = e.Message.LastName,
-                                Message = e.Message.Message,
-                                AudioSource = await SpeechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
-                                Avatar = GetRiderProfileImage(e.Message.Avatar),
-                                CountryCode = countryCode
-                            });
+            ZwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
+                Logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
 
-                            ChatNotificationsService.SendNotificationAsync(message).Wait();
-                        }
-                    }
-                };
+                var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                {
+                    RiderId = e.RideOn.RiderId,
+                    FirstName = e.RideOn.FirstName,
+                    LastName = e.RideOn.LastName,
+                    AudioSource = "/audio/rockon.ogg"
+                });
 
-                ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
-                    //Logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
-                };
+                RideOnNotificationService.SendNotificationAsync(message).Wait();
 
-                ZwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
-                    Logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
-
-                    var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
-                    {
-                        RiderId = e.RideOn.RiderId,
-                        FirstName = e.RideOn.FirstName,
-                        LastName = e.RideOn.LastName,
-                        AudioSource = "/audio/rockon.ogg"
-                    });
-
-                    RideOnNotificationService.SendNotificationAsync(message).Wait();
-
-                    TwitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
-                };
-            }
+                TwitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
+            };
 
             await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"), cancellationToken);
         }
