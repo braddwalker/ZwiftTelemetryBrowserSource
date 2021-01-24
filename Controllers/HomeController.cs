@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ZwiftTelemetryBrowserSource.Models;
@@ -11,8 +12,8 @@ namespace ZwiftTelemetryBrowserSource.Controllers
         private readonly ZonesModel _zones;
         public HomeController(ILogger<HomeController> logger, IOptions<ZonesModel> zones)
         {
-            _logger = logger;
-            _zones = zones.Value;
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _zones = zones?.Value ?? throw new ArgumentException(nameof(zones));
         }
 
         public IActionResult Index()

@@ -7,7 +7,7 @@ namespace ZwiftTelemetryBrowserSource.Util
 {
     public static class RegionInfoExtensions
     {
-        private static Dictionary<string, int> Iso3166NumericDictionary { get; set; }
+        private static Dictionary<string, int> _iso3166NumericDictionary { get; set; }
 
         /// <summary>
         /// This is an extension method for class RegionInfo
@@ -19,19 +19,19 @@ namespace ZwiftTelemetryBrowserSource.Util
         /// <returns>the numeric ISO 31666-1 value of a given RegionInfo </returns>
         public static int NumericIsoCode(this RegionInfo regionInfo)
         {
-            if (!Iso3166NumericDictionary.ContainsKey(regionInfo.TwoLetterISORegionName))
+            if (!_iso3166NumericDictionary.ContainsKey(regionInfo.TwoLetterISORegionName))
             {
                 throw new Exception(string.Format("There is no numeric value for regionInfo {0}", regionInfo.Name));
             }
 
-            return Iso3166NumericDictionary[regionInfo.TwoLetterISORegionName];
+            return _iso3166NumericDictionary[regionInfo.TwoLetterISORegionName];
         }
 
         public static string IsoCodeFromNumeric(this RegionInfo regionInfo, int countryCode)
         {
-            if (Iso3166NumericDictionary.ContainsValue(countryCode))
+            if (_iso3166NumericDictionary.ContainsValue(countryCode))
             {
-                return (Iso3166NumericDictionary.Where(x => x.Value == countryCode).FirstOrDefault().Key);
+                return (_iso3166NumericDictionary.Where(x => x.Value == countryCode).FirstOrDefault().Key);
             }
 
             return ("");
@@ -39,7 +39,7 @@ namespace ZwiftTelemetryBrowserSource.Util
 
         static RegionInfoExtensions()
         {
-            Iso3166NumericDictionary = new Dictionary<string, int>{
+            _iso3166NumericDictionary = new Dictionary<string, int>{
                 {"AF", 4},
                 {"AX", 248},
                 {"AL", 8},

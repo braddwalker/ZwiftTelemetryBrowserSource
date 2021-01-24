@@ -15,24 +15,24 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         private const string SSML_TEMPLATE = "ssml_template.xml";
         private const double SPEECH_SPEED = 1.20;
 
-        private readonly ILogger<SpeechService> Logger;
-        private readonly SpeechOptions Options;
-        private readonly string SubscriptionKey;
-        private readonly string ssmlTemplate;
+        private readonly ILogger<SpeechService> _logger;
+        private readonly SpeechOptions _options;
+        private readonly string _subscriptionKey;
+        private readonly string _ssmlTemplate;
 
-        public SpeechService(ILogger<SpeechService> logger, IOptions<SpeechOptions> speechOptions)
+        public SpeechService(ILogger<SpeechService> logger, IOptions<SpeechOptions> options)
         {
-            Logger = logger;
-            Options = speechOptions.Value;
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _options = options?.Value ?? throw new ArgumentException(nameof(options));
 
-            if (Options.Enabled) 
+            if (_options.Enabled) 
             {
-                Logger.LogInformation("Speech service enabled");
-                SubscriptionKey = File.ReadAllText(Options.SubscriptionKeyFile).Trim();
-                Logger.LogInformation($"Azure key loaded from {new FileInfo(Options.SubscriptionKeyFile).FullName}");
+                _logger.LogInformation("Speech service enabled");
+                _subscriptionKey = File.ReadAllText(_options.SubscriptionKeyFile).Trim();
+                _logger.LogInformation($"Azure key loaded from {new FileInfo(_options.SubscriptionKeyFile).FullName}");
 
-                ssmlTemplate = File.ReadAllText(SSML_TEMPLATE);
-                Logger.LogInformation($"SSML template loaded from {new FileInfo(SSML_TEMPLATE).FullName}");
+                _ssmlTemplate = File.ReadAllText(SSML_TEMPLATE);
+                _logger.LogInformation($"SSML template loaded from {new FileInfo(SSML_TEMPLATE).FullName}");
             }
         }
 
@@ -42,11 +42,11 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
 
             try 
             {
-                if (Options.Enabled)
+                if (_options.Enabled)
                 {
-                    Logger.LogDebug($"Voice: {voiceName}, Message: {message}");
+                    _logger.LogDebug($"Voice: {voiceName}, Message: {message}");
 
-                    var config = SpeechConfig.FromSubscription(SubscriptionKey, Options.Region);
+                    var config = SpeechConfig.FromSubscription(_subscriptionKey, _options.Region);
                     config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3);
                     config.SpeechSynthesisVoiceName = voiceName;
                     
@@ -55,12 +55,12 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
 
                     using (var synthesizer = new SpeechSynthesizer(config, null))
                     {
-                        var ssml = ssmlTemplate
+                        var ssml = _ssmlTemplate
                             .Replace("{voiceName}", voiceName)
                             .Replace("{speed}", $"{SPEECH_SPEED:0.00}")
                             .Replace("{message}", WebUtility.HtmlEncode(message));
 
-                        Logger.LogDebug($"SSML: {ssml}");
+                        _logger.LogDebug($"SSML: {ssml}");
 
                         var result = await synthesizer.SpeakSsmlAsync(ssml);
                         if (result.Reason == ResultReason.SynthesizingAudioCompleted)
@@ -82,20 +82,20 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
                                 }
                                 else 
                                 {
-                                    Logger.LogDebug($"StreamStatus returned {stream.GetStatus()}");
+                                    _logger.LogDebug($"StreamStatus returned {stream.GetStatus()}");
                                 }
                             }
                         }
                         else 
                         {
-                            Logger.LogWarning($"Unable to synthesize speech - {result.Reason} - {result.ResultId}");
+                            _logger.LogWarning($"Unable to synthesize speech - {result.Reason} - {result.ResultId}");
                         }
                     }
                 }
             }
             catch (Exception ex) 
             {
-                Logger.LogError(ex, "GetAudioBase64");
+                _logger.LogError(ex, "GetAudioBase64");
                 return ("");
             }
 

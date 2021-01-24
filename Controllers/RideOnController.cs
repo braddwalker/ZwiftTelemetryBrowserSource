@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +10,7 @@ namespace ZwiftTelemetryBrowserSource.Controllers
 
         public RideOnController(ILogger<RideOnController> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
         }
 
         public IActionResult Index()

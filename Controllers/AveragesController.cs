@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ZwiftTelemetryBrowserSource.Models;
@@ -10,7 +11,7 @@ namespace ZwiftTelemetryBrowserSource.Controllers
 
         public AveragesController(ILogger<AveragesController> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
 
         }
 

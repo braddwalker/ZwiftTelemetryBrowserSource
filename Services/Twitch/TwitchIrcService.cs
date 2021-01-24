@@ -14,66 +14,66 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
     {
         private const int WAIT_TIMEOUT = 10000;
 
-        private IrcDotNet.TwitchIrcClient IrcClient;
-        private TwitchConfig TwitchConfig;
-        private string TwitchOAuthKey;
-        private ILogger<TwitchIrcService> Logger;
+        private IrcDotNet.TwitchIrcClient _ircClient;
+        private TwitchConfig _twitchConfig;
+        private string _twitchOAuthKey;
+        private ILogger<TwitchIrcService> _logger;
 
-        private ManualResetEventSlim connectedEvent;
-        private ManualResetEventSlim registeredEvent;
-        private bool shutdown;
+        private ManualResetEventSlim _connectedEvent;
+        private ManualResetEventSlim _registeredEvent;
+        private bool _shutdown;
 
-        private ConcurrentQueue<string> messageQueue;
+        private ConcurrentQueue<string> _messageQueue;
         
 
         public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig)
         {
-            TwitchConfig = twitchConfig.Value;
-            Logger = logger;
-            shutdown = false;
-            messageQueue = new ConcurrentQueue<string>();
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _twitchConfig = twitchConfig?.Value ?? throw new ArgumentException(nameof(twitchConfig));
+            _shutdown = false;
+            _messageQueue = new ConcurrentQueue<string>();
 
-            if (TwitchConfig.Enabled)
+            if (_twitchConfig.Enabled)
             {
-                Logger.LogInformation("TwitchIrcService enabled");
+                _logger.LogInformation("TwitchIrcService enabled");
 
-                TwitchOAuthKey = File.ReadAllText(TwitchConfig.AuthTokenFile).Trim();
-                Logger.LogInformation($"Twitch OAuth key loaded from {new FileInfo(TwitchConfig.AuthTokenFile).FullName}");
+                _twitchOAuthKey = File.ReadAllText(_twitchConfig.AuthTokenFile).Trim();
+                _logger.LogInformation($"Twitch OAuth key loaded from {new FileInfo(_twitchConfig.AuthTokenFile).FullName}");
             }
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            if (!TwitchConfig.Enabled)
+            if (!_twitchConfig.Enabled)
                 return;
 
-            Logger.LogInformation("Starting TwitchIrcService");
+            _logger.LogInformation("Starting TwitchIrcService");
 
-            IrcClient = new IrcDotNet.TwitchIrcClient();
-            IrcClient.FloodPreventer = new IrcStandardFloodPreventer(4, 2000);
-            IrcClient.Disconnected += (s,e) => {
-                Logger.LogDebug("Twitch IRC disconnected");
+            _ircClient = new IrcDotNet.TwitchIrcClient();
+            _ircClient.FloodPreventer = new IrcStandardFloodPreventer(4, 2000);
+            _ircClient.Disconnected += (s,e) => {
+                _logger.LogDebug("Twitch IRC disconnected");
 
                 // Attempt to reconnect so long as we're not shutting down
-                if (!shutdown)
+                if (!_shutdown)
                 {
-                    Logger.LogDebug("Twitch IRC attempting to reconnect");
+                    _logger.LogDebug("Twitch IRC attempting to reconnect");
                     ConnectIrc(cancellationToken);
                 }
             };
-            IrcClient.Connected += (s,e) => {
-                Logger.LogDebug("Twitch IRC connected");
-                connectedEvent.Set();
+            _ircClient.Connected += (s,e) => {
+                _logger.LogDebug("Twitch IRC connected");
+                _connectedEvent.Set();
             };
-            IrcClient.Registered += (s,e) => {
-                Logger.LogDebug("Twitch IRC registered");
-                registeredEvent.Set();
+            _ircClient.Registered += (s,e) => {
+                _logger.LogDebug("Twitch IRC registered");
+                _registeredEvent.Set();
             };
-            IrcClient.ErrorMessageReceived += (s,e) => {
-                Logger.LogWarning($"ERROR: {e.Message}");
+            _ircClient.ErrorMessageReceived += (s,e) => {
+                _logger.LogWarning($"ERROR: {e.Message}");
             };
-            IrcClient.RawMessageReceived += (s,e) => {
-                Logger.LogDebug($"RAW: {e.RawContent}");
+            _ircClient.RawMessageReceived += (s,e) => {
+                _logger.LogDebug($"RAW: {e.RawContent}");
             };
 
             ConnectIrc(cancellationToken);
@@ -82,16 +82,16 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
             while (!cancellationToken.IsCancellationRequested)
             {
                 string message = null;
-                while (messageQueue.TryDequeue(out message))
+                while (_messageQueue.TryDequeue(out message))
                 {
                     try
                     {
-                        Logger.LogDebug($"SendPublicChatMessage: {message}");
-                        IrcClient.LocalUser.SendMessage($"#{TwitchConfig.ChannelName.ToLower()}", message);
+                        _logger.LogDebug($"SendPublicChatMessage: {message}");
+                        _ircClient.LocalUser.SendMessage($"#{_twitchConfig.ChannelName.ToLower()}", message);
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogError(ex, "SendPublicChatMessage");
+                        _logger.LogError(ex, "SendPublicChatMessage");
                     }
                 }
 
@@ -102,63 +102,63 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Stopping TwitchIrcService");
-            shutdown = true;
-            IrcClient.Disconnect();
+            _logger.LogInformation("Stopping TwitchIrcService");
+            _shutdown = true;
+            _ircClient.Disconnect();
 
             await Task.CompletedTask;
         }
 
         private void ConnectIrc(CancellationToken cancellationToken)
         {
-            if (!TwitchConfig.Enabled)
+            if (!_twitchConfig.Enabled)
                 return;
 
             try
             {
-                using (registeredEvent = new ManualResetEventSlim(false))
+                using (_registeredEvent = new ManualResetEventSlim(false))
                 {
-                    using (connectedEvent = new ManualResetEventSlim(false))
+                    using (_connectedEvent = new ManualResetEventSlim(false))
                     {  
-                        IrcClient.Connect(TwitchConfig.IrcServer, TwitchConfig.IrcPort, false,
+                        _ircClient.Connect(_twitchConfig.IrcServer, _twitchConfig.IrcPort, false,
                             new IrcUserRegistrationInfo() {
-                                Password = TwitchOAuthKey,
-                                NickName = TwitchConfig.Username,
-                                UserName = TwitchConfig.Username,
+                                Password = _twitchOAuthKey,
+                                NickName = _twitchConfig.Username,
+                                UserName = _twitchConfig.Username,
                             });
 
                         // Wait for the connection
-                        if (!connectedEvent.Wait(WAIT_TIMEOUT, cancellationToken))
+                        if (!_connectedEvent.Wait(WAIT_TIMEOUT, cancellationToken))
                         {
-                            Logger.LogError("Twitch IRC connection timeout");
-                            TwitchConfig.Enabled = false;
+                            _logger.LogError("Twitch IRC connection timeout");
+                            _twitchConfig.Enabled = false;
                         }
                     }
 
                     // Wait for the client registration
-                    if (!registeredEvent.Wait(WAIT_TIMEOUT, cancellationToken))
+                    if (!_registeredEvent.Wait(WAIT_TIMEOUT, cancellationToken))
                     {
-                        Logger.LogError("Twitch IRC registration timeout");
-                        TwitchConfig.Enabled = false;
+                        _logger.LogError("Twitch IRC registration timeout");
+                        _twitchConfig.Enabled = false;
                     }
 
                     // Finally, join the channel
-                    IrcClient.Channels.Join($"#{TwitchConfig.ChannelName.ToLower()}");
-                    Logger.LogDebug($"Joining #{TwitchConfig.ChannelName.ToLower()}");
+                    _ircClient.Channels.Join($"#{_twitchConfig.ChannelName.ToLower()}");
+                    _logger.LogDebug($"Joining #{_twitchConfig.ChannelName.ToLower()}");
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "TwitchIrcService");
+                _logger.LogError(ex, "TwitchIrcService");
             }
         }
 
         public void SendPublicChatMessage(string message)
         {
-            if (!TwitchConfig.Enabled)
+            if (!_twitchConfig.Enabled)
                 return;
 
-            messageQueue.Enqueue(message);
+            _messageQueue.Enqueue(message);
         }
     }
 }

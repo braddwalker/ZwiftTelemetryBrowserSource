@@ -20,42 +20,41 @@ namespace ZwiftTelemetryBrowserSource.Services
     /// </summary>
     public class AverageTelemetryService : BackgroundService
     {
-        private ILogger<AverageTelemetryService> Logger;
-        private HashSet<AvgPowerData> PowerData;
-        private HashSet<AvgSpeedData> SpeedData;
-        private HashSet<AvgCadenceData> CadenceData;
-        private HashSet<AvgHeartrateData> HeartrateData;
+        private ILogger<AverageTelemetryService> _logger;
+        private HashSet<AvgPowerData> _powerData;
+        private HashSet<AvgSpeedData> _speedData;
+        private HashSet<AvgCadenceData> _cadenceData;
+        private HashSet<AvgHeartrateData> _heartrateData;
 
-        private IList<AvgPowerData> IntermediatePowerData;
-        private IList<AvgSpeedData> IntermediateSpeedData;
-        private IList<AvgCadenceData> IntermediateCadenceData;
-        private IList<AvgHeartrateData> IntermediateHeartrateData;
+        private IList<AvgPowerData> _intermediatePowerData;
+        private IList<AvgSpeedData> _intermediateSpeedData;
+        private IList<AvgCadenceData> _intermediateCadenceData;
+        private IList<AvgHeartrateData> _intermediateHeartrateData;
 
-        public AvgSummary AvgSummary;
-
-        private AsyncLock AsyncLock;
+        public AvgSummary _avgSummary;
+        private AsyncLock _asyncLock;
 
         public AverageTelemetryService(ILogger<AverageTelemetryService> logger) 
         {
-            Logger = logger;
-            PowerData = new HashSet<AvgPowerData>();
-            SpeedData = new HashSet<AvgSpeedData>();
-            CadenceData = new HashSet<AvgCadenceData>();
-            HeartrateData = new HashSet<AvgHeartrateData>();
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _powerData = new HashSet<AvgPowerData>();
+            _speedData = new HashSet<AvgSpeedData>();
+            _cadenceData = new HashSet<AvgCadenceData>();
+            _heartrateData = new HashSet<AvgHeartrateData>();
 
-            IntermediatePowerData = new List<AvgPowerData>();
-            IntermediateSpeedData = new List<AvgSpeedData>();
-            IntermediateCadenceData = new List<AvgCadenceData>();
-            IntermediateHeartrateData = new List<AvgHeartrateData>();
+            _intermediatePowerData = new List<AvgPowerData>();
+            _intermediateSpeedData = new List<AvgSpeedData>();
+            _intermediateCadenceData = new List<AvgCadenceData>();
+            _intermediateHeartrateData = new List<AvgHeartrateData>();
 
-            AvgSummary = new AvgSummary();
-            AsyncLock = new AsyncLock();
+            _avgSummary = new AvgSummary();
+            _asyncLock = new AsyncLock();
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             try {
-                Logger.LogInformation("Starting AverageTelemetryService");
+                _logger.LogInformation("Starting AverageTelemetryService");
 
                 await Task.Run(async () => 
                 {
@@ -72,77 +71,77 @@ namespace ZwiftTelemetryBrowserSource.Services
                             // update these objects we need to lock here so we
                             // can copy and clear. We'll then do some processing
                             // on the copy
-                            using (AsyncLock.Lock())
+                            using (_asyncLock.Lock())
                             {
                                 // Make a copy and clear the original. This
                                 // prevents us from accumulating this intermediate
                                 // data unbounded in memory
-                                ipd = IntermediatePowerData.ToList();
-                                IntermediatePowerData = new List<AvgPowerData>();
+                                ipd = _intermediatePowerData.ToList();
+                                _intermediatePowerData = new List<AvgPowerData>();
 
-                                isd = IntermediateSpeedData.ToList();
-                                IntermediateSpeedData = new List<AvgSpeedData>();
+                                isd = _intermediateSpeedData.ToList();
+                                _intermediateSpeedData = new List<AvgSpeedData>();
 
-                                icd = IntermediateCadenceData.ToList();
-                                IntermediateCadenceData = new List<AvgCadenceData>();
+                                icd = _intermediateCadenceData.ToList();
+                                _intermediateCadenceData = new List<AvgCadenceData>();
 
-                                ihd = IntermediateHeartrateData.ToList();
-                                IntermediateHeartrateData = new List<AvgHeartrateData>();
+                                ihd = _intermediateHeartrateData.ToList();
+                                _intermediateHeartrateData = new List<AvgHeartrateData>();
                             }
 
                             // Loop through the intermedia data sets, normalize them down 
                             // to one data point per second add to the overall dataset so we can calculate averages
                             foreach (var p in ipd)
                             {
-                                if (!PowerData.Contains(p))
+                                if (!_powerData.Contains(p))
                                 {
-                                    PowerData.Add(p);
+                                    _powerData.Add(p);
                                 }
                             }
 
                             foreach (var s in isd) 
                             {
-                                if (!SpeedData.Contains(s))
+                                if (!_speedData.Contains(s))
                                 {
-                                    SpeedData.Add(s);
+                                    _speedData.Add(s);
                                 }
                             }
 
                             foreach (var c in icd) 
                             {
-                                if (!CadenceData.Contains(c))
+                                if (!_cadenceData.Contains(c))
                                 {
-                                    CadenceData.Add(c);
+                                    _cadenceData.Add(c);
                                 }
                             }
 
                             foreach (var h in ihd) 
                             {
-                                if (!HeartrateData.Contains(h))
+                                if (!_heartrateData.Contains(h))
                                 {
-                                    HeartrateData.Add(h);
+                                    _heartrateData.Add(h);
                                 }
                             }
 
                             // Now recalculate the averages
-                            if (PowerData.Count() > 0)
+                            if (_powerData.Count() > 0)
                             {
-                                AvgSummary.Power = PowerData.Sum(x => x.Power) / PowerData.Count();
+                                _avgSummary.Power = _powerData.Sum(x => x.Power) / _powerData.Count();
                             }
 
-                            if (SpeedData.Count() > 0)
+                            if (_speedData.Count() > 0)
                             {
-                                AvgSummary.Speed = SpeedData.Sum(x => x.Speed) / SpeedData.Count();
+                                _avgSummary.Speed = _speedData.Sum(x => x.Speed) / _speedData.Count();
                             }
 
-                            if (CadenceData.Count() > 0)
+                            if (_cadenceData.Count() > 0)
                             {
-                                AvgSummary.Cadence = CadenceData.Sum(x => x.Cadence) / CadenceData.Count();
+                                _avgSummary.Cadence = _cadenceData.Sum(x => x.Cadence) / _cadenceData.Count();
                             }
 
-                            if (HeartrateData.Count() > 0)
+                            if (_heartrateData.Count() > 0)
                             {
-                                AvgSummary.Heartrate = HeartrateData.Sum(x => x.Heartrate) / HeartrateData.Count();
+                                _avgSummary.Heartrate = _heartrateData.Sum(x => x.Heartrate) / _heartrateData.Count();
                             }
 
                             // We'll recalculate averages ever 5 seconds
@@ -150,15 +149,15 @@ namespace ZwiftTelemetryBrowserSource.Services
                         }
                         catch (TaskCanceledException) {}
                         catch (Exception e) {
-                            Logger.LogError(e, "Task.Run()");
+                            _logger.LogError(e, "Task.Run()");
                         }
                     }
                 }, cancellationToken);
 
-                Logger.LogInformation("Stopping AveragePowerService");                
+                _logger.LogInformation("Stopping AveragePowerService");                
             }
             catch (Exception ex) {
-                Logger.LogError(ex, "ExecuteAsync");
+                _logger.LogError(ex, "ExecuteAsync");
             }
         }
 
@@ -167,15 +166,15 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// </summary>
         public void Reset()
         {
-            Logger.LogDebug("Resetting telemetry");
+            _logger.LogDebug("Resetting telemetry");
             
-            using (AsyncLock.Lock())
+            using (_asyncLock.Lock())
             {
-                AvgSummary = new AvgSummary();
-                PowerData.Clear();
-                SpeedData.Clear();
-                CadenceData.Clear();
-                HeartrateData.Clear();
+                _avgSummary = new AvgSummary();
+                _powerData.Clear();
+                _speedData.Clear();
+                _cadenceData.Clear();
+                _heartrateData.Clear();
             }
         }
 
@@ -186,23 +185,23 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// <returns>The currently computed averages</returns>
         public AvgSummary LogTelemetry(ZwiftPacketMonitor.PlayerState state) 
         {
-            using (AsyncLock.Lock())
+            using (_asyncLock.Lock())
             {
                 // Only calculating avgs if the player is moving
                 if (state.Speed > 0)
                 {
-                    IntermediatePowerData.Add(new AvgPowerData() { Power = state.Power });
-                    IntermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
+                    _intermediatePowerData.Add(new AvgPowerData() { Power = state.Power });
+                    _intermediateHeartrateData.Add(new AvgHeartrateData() { Heartrate = state.Heartrate });
 
                     // convert speed from mm/hr to mi/hr
-                    IntermediateSpeedData.Add(new AvgSpeedData() { Speed = (int)(state.Speed / 1609000) });
+                    _intermediateSpeedData.Add(new AvgSpeedData() { Speed = (int)(state.Speed / 1609000) });
                     
                     // convert cadence from uHz to rpm
-                    IntermediateCadenceData.Add(new AvgCadenceData() { Cadence = (int)(state.CadenceUHz * 0.00006) });
+                    _intermediateCadenceData.Add(new AvgCadenceData() { Cadence = (int)(state.CadenceUHz * 0.00006) });
                 }
             }
 
-            return (AvgSummary);
+            return (_avgSummary);
         }
     }
 

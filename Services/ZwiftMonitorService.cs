@@ -32,88 +32,89 @@ namespace ZwiftTelemetryBrowserSource.Services
             AverageTelemetryService averageTelemetryService,
             ZwiftTTSService zwiftTTSService,
             IOptions<AlertsConfig> alertsConfig,
-            TwitchIrcService twitchIrcService) {
+            TwitchIrcService twitchIrcService) 
+        {
 
-            Config = config;
-            Logger = logger;
-            ZwiftPacketMonitor = zwiftPacketMonitor;
-            TelemetryNotificationsService = telemetryNotificationsService;
-            ChatNotificationsService = chatNotificationsService;
-            RideOnNotificationService = rideOnNotificationService;
-            AverageTelemetryService = averageTelemetryService;
-            SpeechService = zwiftTTSService;
-            AlertsConfig = alertsConfig.Value;
-            TwitchIrcService = twitchIrcService;
+            _config = config ?? throw new ArgumentException(nameof(config));
+            _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _zwiftPacketMonitor = zwiftPacketMonitor ?? throw new ArgumentException(nameof(zwiftPacketMonitor));
+            _telemetryNotificationsService = telemetryNotificationsService ?? throw new ArgumentException(nameof(telemetryNotificationsService));
+            _chatNotificationsService = chatNotificationsService ?? throw new ArgumentException(nameof(chatNotificationsService));
+            _rideOnNotificationService = rideOnNotificationService ?? throw new ArgumentException(nameof(rideOnNotificationService));
+            _averageTelemetryService = averageTelemetryService ?? throw new ArgumentException(nameof(averageTelemetryService));
+            _speechService = zwiftTTSService ?? throw new ArgumentException(nameof(zwiftTTSService));
+            _alertsConfig = alertsConfig?.Value ?? throw new ArgumentException(nameof(alertsConfig));
+            _twitchIrcService = twitchIrcService ?? throw new ArgumentException(nameof(twitchIrcService));
         }
 
-        private ITelemetryNotificationsService TelemetryNotificationsService {get;}
-        private IChatNotificationsService ChatNotificationsService {get;}
-        private IRideOnNotificationService RideOnNotificationService {get;}
-        private IConfiguration Config {get;}
-        private ILogger<ZwiftMonitorService> Logger {get;}
-        private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
-        private AverageTelemetryService AverageTelemetryService {get;}
-        private ZwiftTTSService SpeechService {get;}
-        private AlertsConfig AlertsConfig {get;}
-        private TwitchIrcService TwitchIrcService {get;}
+        private ITelemetryNotificationsService _telemetryNotificationsService {get;}
+        private IChatNotificationsService _chatNotificationsService {get;}
+        private IRideOnNotificationService _rideOnNotificationService {get;}
+        private IConfiguration _config {get;}
+        private ILogger<ZwiftMonitorService> _logger {get;}
+        private ZwiftPacketMonitor.Monitor _zwiftPacketMonitor {get;}
+        private AverageTelemetryService _averageTelemetryService {get;}
+        private ZwiftTTSService _speechService {get;}
+        private AlertsConfig _alertsConfig {get;}
+        private TwitchIrcService _twitchIrcService {get;}
         
         // The Zwift ID of the player being tracked. This is either
         // YOU the actual rider, or another rider chosen at random for debug mode
-        private int currentRiderId;
+        private int _currentRiderId;
         
         // This is used to track when a player enters/leaves an event
-        private int currentGroupId;
+        private int _currentGroupId;
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Stopping ZwiftMonitorService");
-            await ZwiftPacketMonitor.StopCaptureAsync();
+            _logger.LogInformation("Stopping ZwiftMonitorService");
+            await _zwiftPacketMonitor.StopCaptureAsync();
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Starting ZwiftMonitorService");
+            _logger.LogInformation("Starting ZwiftMonitorService");
 
-            ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
+            _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 try 
                 {
                     // Need to hang on to this for later
-                    currentRiderId = e.PlayerState.Id;
+                    _currentRiderId = e.PlayerState.Id;
 
                     DispatchPlayerStateUpdate(e.PlayerState);
 
                     // See if we need to trigger an event/world changed
-                    if (currentGroupId != e.PlayerState.GroupId)
+                    if (_currentGroupId != e.PlayerState.GroupId)
                     {
-                        Logger.LogDebug($"World/event change detected from {currentGroupId} to {e.PlayerState.GroupId}");
-                        currentGroupId = e.PlayerState.GroupId;
+                        _logger.LogDebug($"World/event change detected from {_currentGroupId} to {e.PlayerState.GroupId}");
+                        _currentGroupId = e.PlayerState.GroupId;
 
                         // Reset the speech service voices since we're in a new world
-                        SpeechService.ResetVoices();
+                        _speechService.ResetVoices();
 
                         // If we are entering an event, aways reset average telemetry
                         // If we are leaving an event, let the config decide
                         if ((e.PlayerState.GroupId != 0) 
-                            || (e.PlayerState.GroupId == 0 && Config.GetValue<bool>("ResetAveragesOnEventFinish")))
+                            || (e.PlayerState.GroupId == 0 && _config.GetValue<bool>("ResetAveragesOnEventFinish")))
                         {
-                            AverageTelemetryService.Reset();   
+                            _averageTelemetryService.Reset();   
                         }
                     }
                 }
                 catch (Exception ex) {
-                    Logger.LogError(ex, "OutgoingPlayerEvent");
+                    _logger.LogError(ex, "OutgoingPlayerEvent");
                 }
             };
 
-            ZwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
+            _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                 // Depending on config, we may or may not want to alert chat messages from
                 // nearby players who are in other events
-                if (AlertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == currentGroupId))
+                if (_alertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == _currentGroupId))
                 {
                     // See if we're configured to read own messages if this came from us
-                    if (AlertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != currentRiderId))
+                    if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
                     {
-                        Logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
+                        _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
                         var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
                         var message = JsonConvert.SerializeObject(new ChatNotificationModel()
@@ -122,22 +123,22 @@ namespace ZwiftTelemetryBrowserSource.Services
                             FirstName = e.Message.FirstName,
                             LastName = e.Message.LastName,
                             Message = e.Message.Message,
-                            AudioSource = await SpeechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
+                            AudioSource = await _speechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
                             Avatar = GetRiderProfileImage(e.Message.Avatar),
                             CountryCode = countryCode
                         });
 
-                        ChatNotificationsService.SendNotificationAsync(message).Wait();
+                        _chatNotificationsService.SendNotificationAsync(message).Wait();
                     }
                 }
             };
 
-            ZwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
+            _zwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
                 //Logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
             };
 
-            ZwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
-                Logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
+            _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
+                _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
 
                 var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
                 {
@@ -147,17 +148,17 @@ namespace ZwiftTelemetryBrowserSource.Services
                     AudioSource = "/audio/rockon.ogg"
                 });
 
-                RideOnNotificationService.SendNotificationAsync(message).Wait();
+                _rideOnNotificationService.SendNotificationAsync(message).Wait();
 
-                TwitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
+                _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
             };
 
-            await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"), cancellationToken);
+            await _zwiftPacketMonitor.StartCaptureAsync(_config.GetValue<string>("NetworkInterface"), cancellationToken);
         }
 
         private string GetRiderProfileImage(string avatarUrl)
         {
-            if (AlertsConfig.Chat.ShowProfileImage)
+            if (_alertsConfig.Chat.ShowProfileImage)
             {
                 return (string.IsNullOrWhiteSpace(avatarUrl) ? "/images/avatar.jpg" : avatarUrl);
             }
@@ -168,7 +169,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         }
 
         private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {
-            var summary = AverageTelemetryService.LogTelemetry(state);
+            var summary = _averageTelemetryService.LogTelemetry(state);
 
             var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
             {
@@ -181,7 +182,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 AvgCadence = summary.Cadence
             });
 
-            TelemetryNotificationsService.SendNotificationAsync(telemetry).Wait();
+            _telemetryNotificationsService.SendNotificationAsync(telemetry).Wait();
         }
     }
 }
