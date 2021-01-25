@@ -107,15 +107,14 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
-                // Depending on config, we may or may not want to alert chat messages from
-                // nearby players who are in other events
-                if (_alertsConfig.Chat.AlertOtherEvents || (e.Message.EventSubgroup == _currentGroupId))
+                _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
+
+                // Only alert chat messages that are actually visible to the player in the game
+                if ((_currentGroupId == 0 && e.Message.EventSubgroup == 0) || (_currentGroupId != 0 && e.Message.EventSubgroup != 0))
                 {
                     // See if we're configured to read own messages if this came from us
                     if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
                     {
-                        _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
-
                         var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
                         var message = JsonConvert.SerializeObject(new ChatNotificationModel()
                         {

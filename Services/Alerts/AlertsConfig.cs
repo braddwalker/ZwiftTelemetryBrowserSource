@@ -10,7 +10,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Alerts
     {
         public bool Enabled {get; set;}
         public bool AlertOwnMessages {get; set;}
-        public bool AlertOtherEvents {get; set;}
         public bool ShowProfileImage {get; set;}
     }
 

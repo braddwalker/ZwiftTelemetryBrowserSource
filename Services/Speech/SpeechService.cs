@@ -44,8 +44,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
             {
                 if (_options.Enabled)
                 {
-                    _logger.LogDebug($"Voice: {voiceName}, Message: {message}");
-
                     var config = SpeechConfig.FromSubscription(_subscriptionKey, _options.Region);
                     config.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3);
                     config.SpeechSynthesisVoiceName = voiceName;
