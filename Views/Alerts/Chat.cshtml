@@ -56,7 +56,16 @@
 
         function handleQueue()
         {
+            // throttle the tts queue size so it doesn't get
+            // super backed up
+            while (queue.length > 4)
+            {
+                queue.shift();
+                console.log("queue: "+ queue.length);
+            }
+
             data = queue.shift();
+
             if (data)
             {
                 try 

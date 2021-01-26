@@ -1,6 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Lib.AspNetCore.ServerSentEvents;
 
 namespace ZwiftTelemetryBrowserSource.Services.Alerts
 {
@@ -9,13 +12,17 @@ namespace ZwiftTelemetryBrowserSource.Services.Alerts
         Task SendNotificationAsync(string notification);
     }
 
-    public class AlertsService 
+    public class AlertsService
     {
         private IDictionary<string, IAlertsNotificationService> _alerts;
+        private ILogger<AlertsService> _logger;
+        private AlertsConfig _config;
 
-        public AlertsService()
+        public AlertsService(ILogger<AlertsService> logger, IOptions<AlertsConfig> config)
         {
+            _config = config?.Value ?? throw new ArgumentException(nameof(config));
             _alerts = new Dictionary<string, IAlertsNotificationService>();
+            _logger = logger;
         }
 
         public void RegisterAlert(string alertName, IAlertsNotificationService service) 
@@ -40,6 +47,14 @@ namespace ZwiftTelemetryBrowserSource.Services.Alerts
             {
                 throw new ArgumentException($"{alertName} not registered");
             }
+        }
+    }
+
+    internal class AlertsServiceSSE : ServerSentEventsService
+    {
+        public AlertsServiceSSE(IOptions<ServerSentEventsServiceOptions<AlertsServiceSSE>> options)
+            : base(options.ToBaseServerSentEventsServiceOptions())
+        { 
         }
     }
 }

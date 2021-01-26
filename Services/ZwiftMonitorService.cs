@@ -110,7 +110,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
                 // Only alert chat messages that are actually visible to the player in the game
-                if ((_currentGroupId == 0 && e.Message.EventSubgroup == 0) || (_currentGroupId != 0 && e.Message.EventSubgroup != 0))
+                if (_currentGroupId == e.Message.EventSubgroup)
                 {
                     // See if we're configured to read own messages if this came from us
                     if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
