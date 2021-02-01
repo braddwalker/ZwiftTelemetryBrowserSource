@@ -12,6 +12,7 @@ using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
 using ZwiftTelemetryBrowserSource.Services.Twitch;
+using ZwiftTelemetryBrowserSource.Services.Results;
 using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource
@@ -53,11 +54,13 @@ namespace ZwiftTelemetryBrowserSource
             services.Configure<AlertsConfig>(Configuration.GetSection("Alerts"));
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
             services.Configure<SpeechOptions>(Configuration.GetSection("Speech"));
+            services.Configure<ResultsConfig>(Configuration.GetSection("Results"));
 
             services.AddZwiftPacketMonitoring();
             services.AddTransient<ZwiftTTSService>();
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
+            services.AddTransient<ResultsService>();
             services.AddSingleton<TwitchIrcService>();
             services.AddHostedService<ZwiftMonitorService>();
 

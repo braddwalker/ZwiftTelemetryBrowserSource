@@ -12,6 +12,7 @@ using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Speech;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
 using ZwiftTelemetryBrowserSource.Services.Twitch;
+using ZwiftTelemetryBrowserSource.Services.Results;
 using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
@@ -32,7 +33,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             AverageTelemetryService averageTelemetryService,
             ZwiftTTSService zwiftTTSService,
             IOptions<AlertsConfig> alertsConfig,
-            TwitchIrcService twitchIrcService) 
+            TwitchIrcService twitchIrcService,
+            ResultsService resultsService) 
         {
 
             _config = config ?? throw new ArgumentException(nameof(config));
@@ -45,6 +47,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             _speechService = zwiftTTSService ?? throw new ArgumentException(nameof(zwiftTTSService));
             _alertsConfig = alertsConfig?.Value ?? throw new ArgumentException(nameof(alertsConfig));
             _twitchIrcService = twitchIrcService ?? throw new ArgumentException(nameof(twitchIrcService));
+            _resultsService = resultsService ?? throw new ArgumentException(nameof(resultsService));
         }
 
         private ITelemetryNotificationsService _telemetryNotificationsService {get;}
@@ -57,6 +60,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         private ZwiftTTSService _speechService {get;}
         private AlertsConfig _alertsConfig {get;}
         private TwitchIrcService _twitchIrcService {get;}
+        private ResultsService _resultsService {get;}
         
         // The Zwift ID of the player being tracked. This is either
         // YOU the actual rider, or another rider chosen at random for debug mode
@@ -78,6 +82,9 @@ namespace ZwiftTelemetryBrowserSource.Services
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 try 
                 {
+                    //_logger.LogDebug(e.PlayerState.ToString());
+                    _resultsService.RegisterResults(e.PlayerState);
+
                     // Need to hang on to this for later
                     _currentRiderId = e.PlayerState.Id;
 
@@ -92,6 +99,9 @@ namespace ZwiftTelemetryBrowserSource.Services
                         // Reset the speech service voices since we're in a new world
                         _speechService.ResetVoices();
 
+                        // Just to be explicit, we should reset anytime the world changes
+                        _resultsService.Reset();
+
                         // If we are entering an event, aways reset average telemetry
                         // If we are leaving an event, let the config decide
                         if ((e.PlayerState.GroupId != 0) 
@@ -104,6 +114,11 @@ namespace ZwiftTelemetryBrowserSource.Services
                 catch (Exception ex) {
                     _logger.LogError(ex, "OutgoingPlayerEvent");
                 }
+            };
+
+            _zwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
+                // _logger.LogDebug(e.PlayerState.ToString());
+                _resultsService.RegisterResults(e.PlayerState);
             };
 
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
@@ -133,7 +148,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
-                //Logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
+                //_logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
+                _resultsService.RegisterRider(e.PlayerUpdate.F2, $"{e.PlayerUpdate.FirstName} {e.PlayerUpdate.LastName}");
             };
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
