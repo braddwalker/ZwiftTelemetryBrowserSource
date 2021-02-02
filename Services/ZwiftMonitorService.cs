@@ -82,7 +82,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 try 
                 {
-                    //_logger.LogDebug(e.PlayerState.ToString());
+                    _logger.LogDebug(e.PlayerState.ToString());
                     _resultsService.RegisterResults(e.PlayerState);
 
                     // Need to hang on to this for later
@@ -100,7 +100,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                         _speechService.ResetVoices();
 
                         // Just to be explicit, we should reset anytime the world changes
-                        _resultsService.Reset();
+                        _resultsService.Reset(e.PlayerState.GroupId);
 
                         // If we are entering an event, aways reset average telemetry
                         // If we are leaving an event, let the config decide

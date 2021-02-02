@@ -49,9 +49,14 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             }
         }
 
-        public void Reset()
+        public void Reset(int? eventId = null)
         {
             _raceData = new List<PlayerRaceData>();
+
+            if (eventId.HasValue)
+            {
+                _config.EventId = eventId.Value;
+            }
         }
 
         public void RegisterRider(int riderId, string name)
@@ -113,7 +118,14 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         private string GetRiderName(int riderId)
         {
             var rider = _riders.FirstOrDefault(x => x.RiderId == riderId);
-            return (rider?.Name ?? riderId.ToString());
+            if (rider != null) 
+            {
+                return ($"{rider.Name} ({riderId})");
+            }
+            else
+            {
+                return (riderId.ToString());
+            }
         }
 
         private void PrintResults()
