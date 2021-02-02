@@ -82,7 +82,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 try 
                 {
-                    _logger.LogDebug(e.PlayerState.ToString());
+                    //_logger.LogDebug(e.PlayerState.ToString());
                     _resultsService.RegisterResults(e.PlayerState);
 
                     // Need to hang on to this for later
