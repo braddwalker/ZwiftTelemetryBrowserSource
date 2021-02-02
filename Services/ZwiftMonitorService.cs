@@ -123,6 +123,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                 _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
+                _resultsService.RegisterRider(e.Message.RiderId, $"{e.Message.FirstName} {e.Message.LastName}");
 
                 // Only alert chat messages that are actually visible to the player in the game
                 if (_currentGroupId == e.Message.EventSubgroup)
@@ -154,6 +155,8 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
                 _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
+                _resultsService.RegisterRider(e.RideOn.RiderId, $"{e.RideOn.FirstName} {e.RideOn.LastName}");
+                _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
 
                 var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
                 {
@@ -164,8 +167,6 @@ namespace ZwiftTelemetryBrowserSource.Services
                 });
 
                 _rideOnNotificationService.SendNotificationAsync(message).Wait();
-
-                _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
             };
 
             await _zwiftPacketMonitor.StartCaptureAsync(_config.GetValue<string>("NetworkInterface"), cancellationToken);

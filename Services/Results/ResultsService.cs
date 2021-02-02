@@ -1,6 +1,8 @@
 using System;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Configuration;
 using ZwiftPacketMonitor;
 using System.Drawing;
 using System.Collections.Generic;
@@ -31,7 +33,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         private IList<PlayerRaceData> _raceData;
         private IList<PlayerData> _riders;
 
-        public ResultsService(ILogger<ResultsService> logger, IOptions<ResultsConfig> config)
+        public ResultsService(ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _config = config?.Value;
@@ -46,6 +48,15 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 }
 
                 _logger.LogDebug($"Finish Line: {_config.FinishLine[0].X}, {_config.FinishLine[0].Y} to {_config.FinishLine[1].X}, {_config.FinishLine[1].Y}");
+
+                // Listen for config changes
+                ChangeToken.OnChange(
+                    () => rootConfig.GetReloadToken(),
+                    () => {
+                        var eventId = rootConfig.GetSection("Results").GetValue<int>("EventId");
+                        _logger.LogDebug($"Configuration change detected, reloading EventId: {eventId}");
+                        Reset(eventId);
+                    });
             }
         }
 
@@ -75,13 +86,13 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             {
                 if ((state.Speed > 0) && PassedFinishLine(state))
                 {
-                    _logger.LogDebug($"FINISH LINE: {state}");
+                    //_logger.LogDebug($"FINISH LINE: {state}");
 
                     // Do we already have an entry for this player
                     var x = _raceData.FirstOrDefault(x => x.RiderId == state.Id);
                     if (x != null)
                     {
-                        _logger.LogDebug("EXISTING RIDER");
+                        //_logger.LogDebug("EXISTING RIDER");
 
                         // We have a record for this player, but now we need to check WorldTime - 10000ms due to duplicates from the size of the finish line polygon
                         if (x.WorldTime <= (state.WorldTime - 10000))
@@ -99,7 +110,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                     }
                     else
                     {
-                        _logger.LogDebug("NEW RIDER");
+                        //_logger.LogDebug("NEW RIDER");
 
                         _raceData.Add(new PlayerRaceData()
                         {

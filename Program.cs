@@ -16,7 +16,7 @@ namespace ZwiftTelemetryBrowserSource
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     var config = new ConfigurationBuilder()
-                        .AddJsonFile("appsettings.json")
+                        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .AddCommandLine(args)
                         .Build();
