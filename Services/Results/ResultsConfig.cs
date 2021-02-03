@@ -6,8 +6,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
     {
         public int EventId {get; set;}
 
-        public PointF[] FinishLine {get; set;}
-
-        public float Distance {get; set;}
+        public bool Enabled {get; set;}
     }
 }
