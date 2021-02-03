@@ -131,7 +131,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
             output.AppendLine();
             output.AppendLine("Position  Lap  Time      World Time     Rider");
-            foreach (var player in _raceData.Values.OrderByDescending(x => x.Laps).ThenBy(x => x.WorldTime))
+            foreach (var player in _raceData.Values.Where(x => x.Laps > 0).OrderByDescending(x => x.Laps).ThenBy(x => x.WorldTime))
             {
                 var t = TimeSpan.FromSeconds(player.ElapsedTime);
                 var elapsedTime = string.Format("{0:D1}h:{1:D2}m:{2:D2}", t.Hours, t.Minutes, t.Seconds);
