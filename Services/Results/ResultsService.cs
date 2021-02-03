@@ -18,26 +18,20 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         public int Laps {get; set;}
     }
 
-    class PlayerData
-    {
-        public int RiderId {get; set;}
-        public string Name {get; set;}
-    }
-
     public class ResultsService
     {
+        private RiderService _riderService;
         private ILogger<ResultsService> _logger;
         private ResultsConfig _config;
 
         private IDictionary<int, PlayerRaceData> _raceData;
-        private IList<PlayerData> _riders;
 
-        public ResultsService(ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
+        public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
         {
+            _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentException(nameof(config));
             _raceData = new Dictionary<int, PlayerRaceData>();
-            _riders = new List<PlayerData>();
 
             if (_config.Enabled)
             {
@@ -64,19 +58,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             if (eventId.HasValue)
             {
                 _config.EventId = eventId.Value;
-            }
-        }
-
-        public void RegisterRider(int riderId, string name)
-        {
-            if (!_config.Enabled)
-            {
-                return;
-            }
-
-            if (!_riders.Any(x => x.RiderId == riderId))
-            {
-                _riders.Add(new PlayerData() { RiderId = riderId, Name = name });
             }
         }
 
@@ -124,7 +105,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         private string GetRiderName(int riderId)
         {
-            var rider = _riders.FirstOrDefault(x => x.RiderId == riderId);
+            var rider = _riderService.GetRider(riderId);
             if (rider != null) 
             {
                 return ($"{rider.Name} ({riderId})");
@@ -167,6 +148,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             }
             
             Console.WriteLine($"{output.ToString()}");
+            Console.WriteLine($"Rider cache: {_riderService.GetRiders().Count}");
         }
     }
 }

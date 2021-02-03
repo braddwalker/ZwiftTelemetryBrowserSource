@@ -61,6 +61,7 @@ namespace ZwiftTelemetryBrowserSource
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
             services.AddTransient<ResultsService>();
+            services.AddSingleton<RiderService>();
             services.AddSingleton<TwitchIrcService>();
             services.AddHostedService<ZwiftMonitorService>();
 

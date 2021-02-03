@@ -34,7 +34,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             ZwiftTTSService zwiftTTSService,
             IOptions<AlertsConfig> alertsConfig,
             TwitchIrcService twitchIrcService,
-            ResultsService resultsService) 
+            ResultsService resultsService,
+            RiderService riderService) 
         {
 
             _config = config ?? throw new ArgumentException(nameof(config));
@@ -48,6 +49,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             _alertsConfig = alertsConfig?.Value ?? throw new ArgumentException(nameof(alertsConfig));
             _twitchIrcService = twitchIrcService ?? throw new ArgumentException(nameof(twitchIrcService));
             _resultsService = resultsService ?? throw new ArgumentException(nameof(resultsService));
+            _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
         }
 
         private ITelemetryNotificationsService _telemetryNotificationsService {get;}
@@ -61,6 +63,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         private AlertsConfig _alertsConfig {get;}
         private TwitchIrcService _twitchIrcService {get;}
         private ResultsService _resultsService {get;}
+        private RiderService _riderService {get;}
         
         // The Zwift ID of the player being tracked. This is either
         // YOU the actual rider, or another rider chosen at random for debug mode
@@ -93,7 +96,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                     // See if we need to trigger an event/world changed
                     if (_currentGroupId != e.PlayerState.GroupId)
                     {
-                        _logger.LogDebug($"World/event change detected from {_currentGroupId} to {e.PlayerState.GroupId}");
+                        _logger.LogInformation($"World/event change detected from {_currentGroupId} to {e.PlayerState.GroupId}");
                         _currentGroupId = e.PlayerState.GroupId;
 
                         // Reset the speech service voices since we're in a new world
@@ -117,13 +120,13 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
-                // _logger.LogDebug(e.PlayerState.ToString());
+                //_logger.LogDebug(e.PlayerState.ToString());
                 _resultsService.RegisterResults(e.PlayerState);
             };
 
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                 _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
-                _resultsService.RegisterRider(e.Message.RiderId, $"{e.Message.FirstName} {e.Message.LastName}");
+                _riderService.AddRider(e.Message.RiderId, e.Message.FirstName, e.Message.LastName);
 
                 // Only alert chat messages that are actually visible to the player in the game
                 if (_currentGroupId == e.Message.EventSubgroup)
@@ -150,12 +153,12 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
                 //_logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
-                _resultsService.RegisterRider(e.PlayerUpdate.F2, $"{e.PlayerUpdate.FirstName} {e.PlayerUpdate.LastName}");
+                _riderService.AddRider(e.PlayerUpdate.F2, e.PlayerUpdate.FirstName, e.PlayerUpdate.LastName);
             };
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
                 _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
-                _resultsService.RegisterRider(e.RideOn.RiderId, $"{e.RideOn.FirstName} {e.RideOn.LastName}");
+                _riderService.AddRider(e.RideOn.RiderId, e.RideOn.FirstName, e.RideOn.LastName);
                 _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
 
                 var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
