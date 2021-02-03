@@ -2,6 +2,8 @@ using System;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using ZwiftTelemetryBrowserSource.Util;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -11,6 +13,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         public string FirstName {get; set;}
         public string LastName {get; set;}
         public string Name => $"{FirstName} {LastName}";
+        public string CountryCode {get; set;}
     }
 
     /// <summary>
@@ -34,6 +37,28 @@ namespace ZwiftTelemetryBrowserSource.Services
                 RiderId = riderId,
                 FirstName = firstName,
                 LastName = lastName
+            });
+        }
+
+        public void AddRider(int riderId, string firstName, string lastName, string countryCode)
+        {
+            AddRider(new RiderInfo() 
+            {
+                RiderId = riderId,
+                FirstName = firstName,
+                LastName = lastName,
+                CountryCode = countryCode
+            });
+        }
+
+        public void AddRider(int riderId, string firstName, string lastName, int countryId)
+        {
+            AddRider(new RiderInfo() 
+            {
+                RiderId = riderId,
+                FirstName = firstName,
+                LastName = lastName,
+                CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(countryId)
             });
         }
 

@@ -126,7 +126,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                 _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
-                _riderService.AddRider(e.Message.RiderId, e.Message.FirstName, e.Message.LastName);
+                _riderService.AddRider(e.Message.RiderId, e.Message.FirstName, e.Message.LastName, e.Message.CountryCode);
 
                 // Only alert chat messages that are actually visible to the player in the game
                 if (_currentGroupId == e.Message.EventSubgroup)
@@ -158,7 +158,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
                 _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
-                _riderService.AddRider(e.RideOn.RiderId, e.RideOn.FirstName, e.RideOn.LastName);
+                _riderService.AddRider(e.RideOn.RiderId, e.RideOn.FirstName, e.RideOn.LastName, e.RideOn.CountryCode);
                 _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
 
                 var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
