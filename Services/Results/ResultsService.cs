@@ -54,6 +54,11 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         public void Reset(int? eventId = null)
         {
+            if (!_config.Enabled)
+            {
+                return;
+            }
+
             _raceData = new Dictionary<int, PlayerRaceData>();
 
             if (eventId.HasValue)
@@ -64,27 +69,35 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         public void RegisterRider(int riderId, string name)
         {
+            if (!_config.Enabled)
+            {
+                return;
+            }
+
             if (!_riders.Any(x => x.RiderId == riderId))
             {
                 _riders.Add(new PlayerData() { RiderId = riderId, Name = name });
-                //_logger.LogDebug($"REGISTER: {riderId}, {name}");
             }
         }
 
         public void RegisterResults(PlayerState state)
         {
+            if (!_config.Enabled)
+            {
+                return;
+            }
+
             // Only do this if there is some config defined and we've matched the specific event
-            if ((_config.Enabled) && (_config.EventId == state.GroupId))
+            if (_config.EventId == state.GroupId)
             {
                 var showResults = false;
-                //_logger.LogDebug($"FINISH LINE: {state}");
 
                 // Do we already have an entry for this player
                 if (_raceData.ContainsKey(state.Id))
                 {
-                    //_logger.LogDebug("EXISTING RIDER");
                     var x = _raceData[state.Id];
 
+                    // Only show results if someone has gone to the next lap
                     showResults = showResults || (x.Laps != state.Laps);
 
                     x.WorldTime = state.WorldTime;
@@ -93,8 +106,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 }
                 else
                 {
-                    //_logger.LogDebug("NEW RIDER");
-
                     _raceData.Add(state.Id, new PlayerRaceData()
                     {
                         RiderId = state.Id,
@@ -126,17 +137,33 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         private void PrintResults()
         {
+            var results = _raceData.Values.Where(x => x.Laps > 0).OrderByDescending(x => x.Laps).ThenBy(x => x.WorldTime);
             var position = 1;
+            var leaderTime = results.FirstOrDefault().WorldTime;
             var output = new StringBuilder();
 
             output.AppendLine();
-            output.AppendLine("Position  Lap  Time      World Time     Rider");
-            foreach (var player in _raceData.Values.Where(x => x.Laps > 0).OrderByDescending(x => x.Laps).ThenBy(x => x.WorldTime))
+            output.AppendLine("Position  Lap  Time         Diff     World Time     Rider");
+            foreach (var player in results)
             {
-                var t = TimeSpan.FromSeconds(player.ElapsedTime);
-                var elapsedTime = string.Format("{0:D1}h:{1:D2}m:{2:D2}", t.Hours, t.Minutes, t.Seconds);
+                var et = TimeSpan.FromSeconds(player.ElapsedTime);
+                var etFormatted = string.Format("{0:D1}h:{1:D2}m:{2:D2}", et.Hours, et.Minutes, et.Seconds);
+                
+                var diffFormatted = "";
+                if (position > 1)
+                {
+                    var diff = TimeSpan.FromMilliseconds(player.WorldTime - leaderTime);
+                    if (diff.TotalMinutes < 1)
+                    {
+                        diffFormatted = string.Format("+{0:D1}.{1:D3}s", diff.Seconds, diff.Milliseconds);
+                    }
+                    else
+                    {
+                        diffFormatted = string.Format("+{0:D2}:{1:D2}", diff.Minutes, diff.Seconds);
+                    }
+                }
 
-                output.AppendLine(String.Format("{0, -8}  {1, -3}  {2, -8}  {3, -13}  {4, -20}", position++, player.Laps, elapsedTime, player.WorldTime, GetRiderName(player.RiderId)));
+                output.AppendLine(String.Format("{0, -8}  {1, 3}  {2, -9}  {3, 8}  {4, -13}  {5, -20}", position++, player.Laps, etFormatted, diffFormatted, player.WorldTime, GetRiderName(player.RiderId)));
             }
             
             Console.WriteLine($"{output.ToString()}");
