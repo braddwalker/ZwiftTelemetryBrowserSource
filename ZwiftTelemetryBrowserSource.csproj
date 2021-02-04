@@ -8,13 +8,11 @@
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.14.0" />
     <PackageReference Include="IrcDotNet" Version="0.7.0" />
+    <PackageReference Include="ZwiftPacketMonitor" Version="1.2.6" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Views\**\*;wwwroot\**\*">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ZwiftPacketMonitor\ZwiftPacketMonitor.csproj" />
   </ItemGroup>
 </Project>
