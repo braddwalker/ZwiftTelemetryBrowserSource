@@ -26,6 +26,8 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         private IDictionary<int, PlayerRaceData> _raceData;
 
+        private Object raceLock = new object();
+
         public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
         {
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
@@ -73,32 +75,35 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             {
                 var showResults = false;
 
-                // Do we already have an entry for this player
-                if (_raceData.ContainsKey(state.Id))
+                lock (raceLock)
                 {
-                    var x = _raceData[state.Id];
-
-                    // Only show results if someone has gone to the next lap
-                    showResults = showResults || (x.Laps != state.Laps);
-
-                    x.WorldTime = state.WorldTime;
-                    x.ElapsedTime = state.Time;
-                    x.Laps = state.Laps;
-                }
-                else
-                {
-                    _raceData.Add(state.Id, new PlayerRaceData()
+                    // Do we already have an entry for this player
+                    if (_raceData.ContainsKey(state.Id))
                     {
-                        RiderId = state.Id,
-                        WorldTime = state.WorldTime,
-                        ElapsedTime = state.Time,
-                        Laps = state.Laps
-                    });
-                }
+                        var x = _raceData[state.Id];
 
-                if (showResults)
-                {
-                    PrintResults();
+                        // Only show results if someone has gone to the next lap
+                        showResults = showResults || (x.Laps != state.Laps);
+
+                        x.WorldTime = state.WorldTime;
+                        x.ElapsedTime = state.Time;
+                        x.Laps = state.Laps;
+                    }
+                    else
+                    {
+                        _raceData.Add(state.Id, new PlayerRaceData()
+                        {
+                            RiderId = state.Id,
+                            WorldTime = state.WorldTime,
+                            ElapsedTime = state.Time,
+                            Laps = state.Laps
+                        });
+                    }
+
+                    if (showResults)
+                    {
+                        PrintResults();
+                    }
                 }
             }
         }
