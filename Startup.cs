@@ -30,7 +30,7 @@ namespace ZwiftTelemetryBrowserSource
 
             services.Configure<ZonesModel>(Configuration.GetSection("Zones"));           
             services.AddTransient<Monitor>();
-            services.AddHostedService<ZwiftMonitorService>();
+            services.AddZwiftPacketMonitoring();
             services.AddControllersWithViews();
             services.AddLogging(builder => 
             {
