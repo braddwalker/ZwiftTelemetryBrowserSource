@@ -74,7 +74,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 var showResults = false;
 
                 _raceData.AddOrUpdate(state.Id,
-                    (x) => { return (new PlayerRaceData()
+                    (k) => { return (new PlayerRaceData()
                             {
                                 RiderId = state.Id,
                                 WorldTime = state.WorldTime,
