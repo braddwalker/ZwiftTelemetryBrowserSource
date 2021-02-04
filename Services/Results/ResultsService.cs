@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Configuration;
 using ZwiftPacketMonitor;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 
@@ -24,16 +24,14 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         private ILogger<ResultsService> _logger;
         private ResultsConfig _config;
 
-        private IDictionary<int, PlayerRaceData> _raceData;
-
-        private Object raceLock = new object();
+        private ConcurrentDictionary<int, PlayerRaceData> _raceData;
 
         public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
         {
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentException(nameof(config));
-            _raceData = new Dictionary<int, PlayerRaceData>();
+            _raceData = new ConcurrentDictionary<int, PlayerRaceData>();
 
             if (_config.Enabled)
             {
@@ -55,7 +53,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 return;
             }
 
-            _raceData = new Dictionary<int, PlayerRaceData>();
+            _raceData = new ConcurrentDictionary<int, PlayerRaceData>();
 
             if (eventId.HasValue)
             {
@@ -75,35 +73,33 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             {
                 var showResults = false;
 
-                lock (raceLock)
-                {
-                    // Do we already have an entry for this player
-                    if (_raceData.ContainsKey(state.Id))
-                    {
-                        var x = _raceData[state.Id];
-
-                        // Only show results if someone has gone to the next lap
-                        showResults = showResults || (x.Laps != state.Laps);
-
-                        x.WorldTime = state.WorldTime;
-                        x.ElapsedTime = state.Time;
-                        x.Laps = state.Laps;
-                    }
-                    else
-                    {
-                        _raceData.Add(state.Id, new PlayerRaceData()
+                _raceData.AddOrUpdate(state.Id,
+                    (x) => { return (new PlayerRaceData()
+                            {
+                                RiderId = state.Id,
+                                WorldTime = state.WorldTime,
+                                ElapsedTime = state.Time,
+                                Laps = state.Laps
+                            });
+                    },
+                    (k, x) => {
+                        // Only update this player's stats if they have gone to another lap
+                        if (state.Laps > x.Laps)
                         {
-                            RiderId = state.Id,
-                            WorldTime = state.WorldTime,
-                            ElapsedTime = state.Time,
-                            Laps = state.Laps
-                        });
-                    }
+                            showResults = true;
 
-                    if (showResults)
-                    {
-                        PrintResults();
+                            x.WorldTime = state.WorldTime;
+                            x.ElapsedTime = state.Time;
+                            x.Laps = state.Laps;
+                        }
+
+                        return (x);
                     }
+                );
+
+                if (showResults)
+                {
+                    PrintResults();
                 }
             }
         }
