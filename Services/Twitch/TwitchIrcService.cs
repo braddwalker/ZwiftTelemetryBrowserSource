@@ -104,7 +104,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
         {
             _logger.LogInformation("Stopping TwitchIrcService");
             _shutdown = true;
-            _ircClient.Disconnect();
+            _ircClient?.Disconnect();
 
             await Task.CompletedTask;
         }

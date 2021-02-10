@@ -39,9 +39,13 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 ChangeToken.OnChange(
                     () => rootConfig.GetReloadToken(),
                     () => {
-                        var eventId = rootConfig.GetSection("Results").GetValue<int>("EventId");
-                        _logger.LogDebug($"Configuration change detected, reloading EventId: {eventId}");
-                        Reset(eventId);
+                        var eventId = rootConfig.GetSection("Results").GetValue<int?>("EventId");
+                        
+                        if (eventId.HasValue)
+                        {
+                            _logger.LogDebug($"Configuration change detected, reloading EventId: {eventId}");
+                            Reset(eventId);
+                        }
                     });
             }
         }

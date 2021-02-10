@@ -124,6 +124,10 @@ namespace ZwiftTelemetryBrowserSource.Services
                 _resultsService.RegisterResults(e.PlayerState);
             };
 
+            _zwiftPacketMonitor.IncomingPlayerWorldTimeUpdateEvent += (s, e) => {
+                //_logger.LogDebug(e.PlayerUpdate.ToString());
+            };
+            
             _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
                 _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
                 _riderService.AddRider(e.Message.RiderId, e.Message.FirstName, e.Message.LastName, e.Message.CountryCode);
