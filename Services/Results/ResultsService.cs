@@ -78,13 +78,14 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 var showResults = false;
 
                 _raceData.AddOrUpdate(state.Id,
-                    (k) => { return (new PlayerRaceData()
-                            {
-                                RiderId = state.Id,
-                                WorldTime = state.WorldTime,
-                                ElapsedTime = state.Time,
-                                Laps = state.Laps
-                            });
+                    (k) => { 
+                        return (new PlayerRaceData()
+                        {
+                            RiderId = state.Id,
+                            WorldTime = state.WorldTime,
+                            ElapsedTime = state.Time,
+                            Laps = state.Laps
+                        });
                     },
                     (k, x) => {
                         // Only update this player's stats if they have gone to another lap
@@ -152,6 +153,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                 output.AppendLine(String.Format("{0, -8}  {1, 3}  {2, -9}  {3, 8}  {4, -13}  {5, -20}", position++, player.Laps, etFormatted, diffFormatted, player.WorldTime, GetRiderName(player.RiderId)));
             }
             
+            Console.WriteLine(DateTime.Now.ToString());
             Console.WriteLine($"{output.ToString()}");
             Console.WriteLine($"Rider cache: {_riderService.GetRiders().Count}");
         }
