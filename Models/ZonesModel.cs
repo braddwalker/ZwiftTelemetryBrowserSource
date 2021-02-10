@@ -17,7 +17,6 @@ namespace ZwiftTelemetryBrowserSource.Models
         public int Z4 {get; set;}
         public int Z5 {get; set;}
         public int Z6 {get; set;}
-        public int Z7 {get; set;}
     }
 
     public class HRZones {

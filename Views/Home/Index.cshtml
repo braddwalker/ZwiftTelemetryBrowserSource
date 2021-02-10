@@ -103,20 +103,19 @@
             colorStop: '#8FC0DA',
             strokeColor: '#E0E0E0',
             staticZones: [
-                {strokeStyle: "#30B32D", min: 0, max: @Model.Power.Z1}, //Green
-                {strokeStyle: "#FFDD00", min: @(Model.Power.Z1 + 1), max: @Model.Power.Z2}, // Yellow
-                {strokeStyle: "#FFA500", min: @(Model.Power.Z2 + 1), max: @Model.Power.Z3}, // Orange
-                {strokeStyle: "#FF4500", min: @(Model.Power.Z3 + 1), max: @Model.Power.Z4},  // Orange Red
-                {strokeStyle: "#F03E3E", min: @(Model.Power.Z4 + 1), max: @Model.Power.Z5},  // Red
-                {strokeStyle: "#8B0000", min: @(Model.Power.Z5 + 1), max: @Model.Power.Z6},  // Red
-                {strokeStyle: "#800000", min: @(Model.Power.Z6 + 1), max: @Model.Power.Z7}  // Maroon
+                {strokeStyle: "#7f7f7f", min: 0, max: @Model.Power.Z1},
+                {strokeStyle: "#008eff", min: @(Model.Power.Z1 + 1), max: @Model.Power.Z2},
+                {strokeStyle: "#10c249", min: @(Model.Power.Z2 + 1), max: @Model.Power.Z3},
+                {strokeStyle: "#ffc900", min: @(Model.Power.Z3 + 1), max: @Model.Power.Z4},
+                {strokeStyle: "#ff5721", min: @(Model.Power.Z4 + 1), max: @Model.Power.Z5}, 
+                {strokeStyle: "#ff0000", min: @(Model.Power.Z5 + 1), max: @Model.Power.Z6}
             ],
         };
 
         var power = document.getElementById('power-gauge-canvas');
         var powerGauge = new Gauge(power).setOptions(powerOpts);
         powerGauge.animationSpeed = 5;
-        powerGauge.maxValue = @Model.Power.Z7;
+        powerGauge.maxValue = @Model.Power.Z6;
         powerGauge.setMinValue(0);
         powerGauge.set(0);
 
@@ -133,11 +132,11 @@
             colorStop: '#8FC0DA',
             strokeColor: '#E0E0E0',
             staticZones: [
-                {strokeStyle: "#30B32D", min: 0, max: @Model.HR.Z1}, //Green
-                {strokeStyle: "#FFDD00", min: @(Model.HR.Z1 + 1), max: @Model.HR.Z2}, // Yellow
-                {strokeStyle: "#FFA500", min: @(Model.HR.Z2 + 1), max: @Model.HR.Z3}, // Orange
-                {strokeStyle: "#FF4500", min: @(Model.HR.Z3 + 1), max: @Model.HR.Z4},  // Orange Red
-                {strokeStyle: "#800000", min: @(Model.HR.Z4 + 1), max: @Model.HR.Z5}  // Red
+                {strokeStyle: "#7f7f7f", min: 0, max: @Model.HR.Z1},
+                {strokeStyle: "#008eff", min: @(Model.HR.Z1 + 1), max: @Model.HR.Z2},
+                {strokeStyle: "#10c249", min: @(Model.HR.Z2 + 1), max: @Model.HR.Z3},
+                {strokeStyle: "#ffc900", min: @(Model.HR.Z3 + 1), max: @Model.HR.Z4}, 
+                {strokeStyle: "#ff5721", min: @(Model.HR.Z4 + 1), max: @Model.HR.Z5} 
             ],
         };
 
@@ -156,7 +155,7 @@
             console.log('Power: ' + data.Power + ', HR: ' + data.HeartRate + ', Avg Power: ' + data.AvgPower + ', Avg Speed: ' + data.AvgSpeed + ', Avg Cadence: ' + data.AvgCadence + ', Avg HR: ' + data.AvgHeartRate);
 
             // Gauges get wonky if you blow past the stated max value
-            powerGauge.set(data.Power <= @Model.Power.Z7 ? data.Power : @Model.Power.Z7); 
+            powerGauge.set(data.Power <= @Model.Power.Z6 ? data.Power : @Model.Power.Z6); 
             hrGauge.set(data.HeartRate <= @Model.HR.Z5 ? data.HeartRate : @Model.HR.Z5);
         };
         source.onerror = function() {
