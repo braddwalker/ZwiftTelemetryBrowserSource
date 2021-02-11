@@ -42,9 +42,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogError("SDOFISDFOISDFPS");
-            
+        {            
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 EventHandler<PlayerStateEventArgs> handler = OutgoingPlayerEvent;
                 if (handler != null)

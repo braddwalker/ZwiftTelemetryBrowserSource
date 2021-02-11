@@ -66,103 +66,100 @@ namespace ZwiftTelemetryBrowserSource.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             try {
-                await Task.Run(async () => 
+                // Loop until the service gets the shutdown signal
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    // Loop until the service gets the shutdown signal
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        try {
-                            IList<AvgPowerData> ipd;
-                            IList<AvgSpeedData> isd;
-                            IList<AvgCadenceData> icd;
-                            IList<AvgHeartrateData> ihd;
+                    try {
+                        IList<AvgPowerData> ipd;
+                        IList<AvgSpeedData> isd;
+                        IList<AvgCadenceData> icd;
+                        IList<AvgHeartrateData> ihd;
 
-                            // Since there are multiple threads trying to
-                            // update these objects we need to lock here so we
-                            // can copy and clear. We'll then do some processing
-                            // on the copy
-                            using (_asyncLock.Lock())
-                            {
-                                // Make a copy and clear the original. This
-                                // prevents us from accumulating this intermediate
-                                // data unbounded in memory
-                                ipd = _intermediatePowerData.ToList();
-                                _intermediatePowerData = new List<AvgPowerData>();
+                        // Since there are multiple threads trying to
+                        // update these objects we need to lock here so we
+                        // can copy and clear. We'll then do some processing
+                        // on the copy
+                        using (_asyncLock.Lock())
+                        {
+                            // Make a copy and clear the original. This
+                            // prevents us from accumulating this intermediate
+                            // data unbounded in memory
+                            ipd = _intermediatePowerData.ToList();
+                            _intermediatePowerData = new List<AvgPowerData>();
 
-                                isd = _intermediateSpeedData.ToList();
-                                _intermediateSpeedData = new List<AvgSpeedData>();
+                            isd = _intermediateSpeedData.ToList();
+                            _intermediateSpeedData = new List<AvgSpeedData>();
 
-                                icd = _intermediateCadenceData.ToList();
-                                _intermediateCadenceData = new List<AvgCadenceData>();
+                            icd = _intermediateCadenceData.ToList();
+                            _intermediateCadenceData = new List<AvgCadenceData>();
 
-                                ihd = _intermediateHeartrateData.ToList();
-                                _intermediateHeartrateData = new List<AvgHeartrateData>();
-                            }
-
-                            // Loop through the intermedia data sets, normalize them down 
-                            // to one data point per second add to the overall dataset so we can calculate averages
-                            foreach (var p in ipd)
-                            {
-                                if (!_powerData.Contains(p))
-                                {
-                                    _powerData.Add(p);
-                                }
-                            }
-
-                            foreach (var s in isd) 
-                            {
-                                if (!_speedData.Contains(s))
-                                {
-                                    _speedData.Add(s);
-                                }
-                            }
-
-                            foreach (var c in icd) 
-                            {
-                                if (!_cadenceData.Contains(c))
-                                {
-                                    _cadenceData.Add(c);
-                                }
-                            }
-
-                            foreach (var h in ihd) 
-                            {
-                                if (!_heartrateData.Contains(h))
-                                {
-                                    _heartrateData.Add(h);
-                                }
-                            }
-
-                            // Now recalculate the averages
-                            if (_powerData.Count() > 0)
-                            {
-                                _avgSummary.Power = _powerData.Sum(x => x.Power) / _powerData.Count();
-                            }
-
-                            if (_speedData.Count() > 0)
-                            {
-                                _avgSummary.Speed = _speedData.Sum(x => x.Speed) / _speedData.Count();
-                            }
-
-                            if (_cadenceData.Count() > 0)
-                            {
-                                _avgSummary.Cadence = _cadenceData.Sum(x => x.Cadence) / _cadenceData.Count();
-                            }
-
-                            if (_heartrateData.Count() > 0)
-                            {
-                                _avgSummary.Heartrate = _heartrateData.Sum(x => x.Heartrate) / _heartrateData.Count();
-                            }
-
-                            // We'll recalculate averages ever 5 seconds
-                            await Task.Delay(5000, cancellationToken);
+                            ihd = _intermediateHeartrateData.ToList();
+                            _intermediateHeartrateData = new List<AvgHeartrateData>();
                         }
-                        catch (TaskCanceledException) {}
-                        catch (Exception e) {
-                            _logger.LogError(e, "Task.Run()");
+
+                        // Loop through the intermedia data sets, normalize them down 
+                        // to one data point per second add to the overall dataset so we can calculate averages
+                        foreach (var p in ipd)
+                        {
+                            if (!_powerData.Contains(p))
+                            {
+                                _powerData.Add(p);
+                            }
                         }
+
+                        foreach (var s in isd) 
+                        {
+                            if (!_speedData.Contains(s))
+                            {
+                                _speedData.Add(s);
+                            }
+                        }
+
+                        foreach (var c in icd) 
+                        {
+                            if (!_cadenceData.Contains(c))
+                            {
+                                _cadenceData.Add(c);
+                            }
+                        }
+
+                        foreach (var h in ihd) 
+                        {
+                            if (!_heartrateData.Contains(h))
+                            {
+                                _heartrateData.Add(h);
+                            }
+                        }
+
+                        // Now recalculate the averages
+                        if (_powerData.Count() > 0)
+                        {
+                            _avgSummary.Power = _powerData.Sum(x => x.Power) / _powerData.Count();
+                        }
+
+                        if (_speedData.Count() > 0)
+                        {
+                            _avgSummary.Speed = _speedData.Sum(x => x.Speed) / _speedData.Count();
+                        }
+
+                        if (_cadenceData.Count() > 0)
+                        {
+                            _avgSummary.Cadence = _cadenceData.Sum(x => x.Cadence) / _cadenceData.Count();
+                        }
+
+                        if (_heartrateData.Count() > 0)
+                        {
+                            _avgSummary.Heartrate = _heartrateData.Sum(x => x.Heartrate) / _heartrateData.Count();
+                        }
+
+                        // We'll recalculate averages ever 5 seconds
+                        await Task.Delay(5000, cancellationToken);
                     }
-                }, cancellationToken);
+                    catch (TaskCanceledException) {}
+                    catch (Exception e) {
+                        _logger.LogError(e, "Task.Run()");
+                    }
+                }
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "ExecuteAsync");
