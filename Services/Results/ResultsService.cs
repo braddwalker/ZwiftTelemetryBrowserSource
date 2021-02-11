@@ -3,10 +3,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using ZwiftPacketMonitor;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ZwiftTelemetryBrowserSource.Services.Results
 {
@@ -18,21 +21,24 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         public int Laps {get; set;}
     }
 
-    public class ResultsService
+    public class ResultsService : BackgroundService
     {
-        private RiderService _riderService;
-        private ILogger<ResultsService> _logger;
+        private readonly ZwiftMonitorService _zwiftService;
+        private readonly RiderService _riderService;
+        private readonly ILogger<ResultsService> _logger;
         private ResultsConfig _config;
         private EventService _eventService;
         private ConcurrentDictionary<int, PlayerRaceData> _raceData;
 
-        public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig, EventService eventService)
+        public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, 
+            IConfiguration rootConfig, EventService eventService, ZwiftMonitorService zwiftService)
         {
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentException(nameof(config));
             _raceData = new ConcurrentDictionary<int, PlayerRaceData>();
             _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
+            _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));
 
             if (_config.Enabled)
             {
@@ -56,6 +62,23 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             }
         }
 
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Results service started");
+
+            _zwiftService.IncomingPlayerEvent += (s, e) =>
+            {
+                RegisterResults(e.PlayerState);
+            };
+
+            _zwiftService.OutgoingPlayerEvent += (s, e) =>
+            {
+                RegisterResults(e.PlayerState);
+            };
+
+            await Task.CompletedTask;
+        }
+
         private void Reset(int eventId)
         {
             if (!_config.Enabled)
@@ -67,7 +90,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             _config.EventId = eventId;
         }
 
-        public void RegisterResults(PlayerState state)
+        private void RegisterResults(PlayerState state)
         {
             if (!_config.Enabled)
             {

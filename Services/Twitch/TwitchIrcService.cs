@@ -26,7 +26,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
         private ConcurrentQueue<string> _messageQueue;
         
 
-        public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig)
+        public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig) 
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _twitchConfig = twitchConfig?.Value ?? throw new ArgumentException(nameof(twitchConfig));

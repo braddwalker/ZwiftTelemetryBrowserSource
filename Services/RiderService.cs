@@ -1,9 +1,13 @@
 using System;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
 using ZwiftTelemetryBrowserSource.Util;
+using System.Threading.Tasks;
+using System.Threading;
+using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -14,55 +18,67 @@ namespace ZwiftTelemetryBrowserSource.Services
         public string LastName {get; set;}
         public string Name => $"{FirstName} {LastName}";
         public string CountryCode {get; set;}
+
+        public override string ToString()
+        {
+            return (JsonConvert.SerializeObject(this));
+        }
     }
 
     /// <summary>
     /// This class acts as a cache repository for rider information
     /// </summary>
-    public class RiderService
+    public class RiderService : BackgroundService
     {
-        private ILogger<RiderService> _logger;
+        private readonly ILogger<RiderService> _logger;
+        private readonly ZwiftMonitorService _zwiftService;
         private Dictionary<int, RiderInfo> _riders;
 
-        public RiderService(ILogger<RiderService> logger)
+        public RiderService(ILogger<RiderService> logger, ZwiftMonitorService zwiftService) 
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));
             _riders = new Dictionary<int, RiderInfo>();
         }
 
-        public void AddRider(int riderId, string firstName, string lastName)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            AddRider(new RiderInfo() 
+            _zwiftService.IncomingChatMessageEvent += (s, e) =>
             {
-                RiderId = riderId,
-                FirstName = firstName,
-                LastName = lastName
-            });
+                AddRider(new RiderInfo()
+                {
+                    RiderId = e.Message.RiderId, 
+                    FirstName = e.Message.FirstName, 
+                    LastName = e.Message.LastName, 
+                    CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)
+                });
+            };
+
+            _zwiftService.IncomingPlayerEnteredWorldEvent += (s, e) =>
+            {
+                AddRider(new RiderInfo()
+                {
+                    RiderId = e.PlayerUpdate.F2,
+                    FirstName = e.PlayerUpdate.FirstName,
+                    LastName = e.PlayerUpdate.LastName
+                });
+            };
+
+            _zwiftService.IncomingRideOnGivenEvent += (s, e) =>
+            {
+                AddRider(new RiderInfo()
+                {
+                    RiderId = e.RideOn.RiderId, 
+                    FirstName = e.RideOn.FirstName, 
+                    LastName = e.RideOn.LastName, 
+                    CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.RideOn.CountryCode)
+                });
+            };
+
+            await Task.CompletedTask;
         }
 
-        public void AddRider(int riderId, string firstName, string lastName, string countryCode)
-        {
-            AddRider(new RiderInfo() 
-            {
-                RiderId = riderId,
-                FirstName = firstName,
-                LastName = lastName,
-                CountryCode = countryCode
-            });
-        }
-
-        public void AddRider(int riderId, string firstName, string lastName, int countryId)
-        {
-            AddRider(new RiderInfo() 
-            {
-                RiderId = riderId,
-                FirstName = firstName,
-                LastName = lastName,
-                CountryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(countryId)
-            });
-        }
-
-        public void AddRider(RiderInfo rider)
+        private void AddRider(RiderInfo rider)
         {
             if (!_riders.ContainsKey(rider.RiderId))
             {

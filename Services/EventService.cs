@@ -1,6 +1,9 @@
 using System;
 using ZwiftPacketMonitor;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -13,20 +16,32 @@ namespace ZwiftTelemetryBrowserSource.Services
     /// This service is responsible for detecting event changes and dispatching them to any
     /// consumers who listen for that event.
     /// </summary>
-    public class EventService
+    public class EventService : BackgroundService
     {
         private int _currentEventId;
         private readonly ILogger<EventService> _logger;
+        private readonly ZwiftMonitorService _zwiftService;
 
         /// <summary>
         /// Gets fired when the rider's current event changes
         /// </summary>
         public event EventHandler<EventChangedArgs> EventChanged;
 
-        public EventService(ILogger<EventService> logger)
+        public EventService(ILogger<EventService> logger, ZwiftMonitorService zwiftService)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));
             _currentEventId = 0;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            _zwiftService.OutgoingPlayerEvent += (s, e) =>
+            {
+                HandlePlayerEvent(e.PlayerState);
+            };
+
+            await Task.CompletedTask;
         }
 
         /// <summary>
@@ -35,7 +50,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// to all listeners of <c>EventChanged</c>.
         /// </summary>
         /// <param name="state">Current player state</param>
-        public void HandlePlayerEvent(PlayerState state)
+        private void HandlePlayerEvent(PlayerState state)
         {
             if (_currentEventId != state.GroupId)
             {

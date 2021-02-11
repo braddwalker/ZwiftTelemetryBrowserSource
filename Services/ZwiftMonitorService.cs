@@ -1,19 +1,10 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
-using System.Globalization;
-using ZwiftTelemetryBrowserSource.Util;
-using ZwiftTelemetryBrowserSource.Models;
-using ZwiftTelemetryBrowserSource.Services.Notifications;
-using ZwiftTelemetryBrowserSource.Services.Speech;
-using ZwiftTelemetryBrowserSource.Services.Alerts;
-using ZwiftTelemetryBrowserSource.Services.Twitch;
-using ZwiftTelemetryBrowserSource.Services.Results;
-using Newtonsoft.Json;
+using ZwiftPacketMonitor;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
@@ -26,55 +17,25 @@ namespace ZwiftTelemetryBrowserSource.Services
     {
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
-            IConfiguration config,
-            ITelemetryNotificationsService telemetryNotificationsService,
-            IChatNotificationsService chatNotificationsService,
-            IRideOnNotificationService rideOnNotificationService,
-            AverageTelemetryService averageTelemetryService,
-            ZwiftTTSService zwiftTTSService,
-            IOptions<AlertsConfig> alertsConfig,
-            TwitchIrcService twitchIrcService,
-            ResultsService resultsService,
-            RiderService riderService,
-            EventService eventService) 
+            IConfiguration config)
         {
-
             _config = config ?? throw new ArgumentException(nameof(config));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftPacketMonitor = zwiftPacketMonitor ?? throw new ArgumentException(nameof(zwiftPacketMonitor));
-            _telemetryNotificationsService = telemetryNotificationsService ?? throw new ArgumentException(nameof(telemetryNotificationsService));
-            _chatNotificationsService = chatNotificationsService ?? throw new ArgumentException(nameof(chatNotificationsService));
-            _rideOnNotificationService = rideOnNotificationService ?? throw new ArgumentException(nameof(rideOnNotificationService));
-            _averageTelemetryService = averageTelemetryService ?? throw new ArgumentException(nameof(averageTelemetryService));
-            _speechService = zwiftTTSService ?? throw new ArgumentException(nameof(zwiftTTSService));
-            _alertsConfig = alertsConfig?.Value ?? throw new ArgumentException(nameof(alertsConfig));
-            _twitchIrcService = twitchIrcService ?? throw new ArgumentException(nameof(twitchIrcService));
-            _resultsService = resultsService ?? throw new ArgumentException(nameof(resultsService));
-            _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
-            _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
         }
 
-        private ITelemetryNotificationsService _telemetryNotificationsService;
-        private IChatNotificationsService _chatNotificationsService;
-        private IRideOnNotificationService _rideOnNotificationService;
+        public event EventHandler<PlayerStateEventArgs> IncomingPlayerEvent;
+        public event EventHandler<PlayerStateEventArgs> OutgoingPlayerEvent;
+        public event EventHandler<PlayerEnteredWorldEventArgs> IncomingPlayerEnteredWorldEvent;
+        public event EventHandler<RideOnGivenEventArgs> IncomingRideOnGivenEvent;
+        public event EventHandler<ChatMessageEventArgs> IncomingChatMessageEvent;
+
+        public event EventHandler<PlayerWorldTimeEventArgs> IncomingPlayerWorldTimeUpdateEvent;
+
         private IConfiguration _config;
         private ILogger<ZwiftMonitorService> _logger;
         private ZwiftPacketMonitor.Monitor _zwiftPacketMonitor;
-        private AverageTelemetryService _averageTelemetryService;
-        private ZwiftTTSService _speechService;
-        private AlertsConfig _alertsConfig;
-        private TwitchIrcService _twitchIrcService;
-        private ResultsService _resultsService;
-        private RiderService _riderService;
-        private EventService _eventService;
         
-        // The Zwift ID of the player being tracked. This is either
-        // YOU the actual rider, or another rider chosen at random for debug mode
-        private int _currentRiderId;
-        
-        // This is used to track when a player enters/leaves an event
-        private int _currentGroupId;
-
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Stopping ZwiftMonitorService");
@@ -86,110 +47,84 @@ namespace ZwiftTelemetryBrowserSource.Services
             _logger.LogInformation("Starting ZwiftMonitorService");
 
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
-                try 
+                EventHandler<PlayerStateEventArgs> handler = OutgoingPlayerEvent;
+                if (handler != null)
                 {
-                    //_logger.LogDebug(e.PlayerState.ToString());
-                    _eventService.HandlePlayerEvent(e.PlayerState);
-                    _resultsService.RegisterResults(e.PlayerState);
-
-                    // Need to hang on to this for later
-                    _currentRiderId = e.PlayerState.Id;
-                    _currentGroupId = e.PlayerState.GroupId;
-
-                    DispatchPlayerStateUpdate(e.PlayerState);
-                }
-                catch (Exception ex) {
-                    _logger.LogError(ex, "OutgoingPlayerEvent");
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
                 }
             };
 
             _zwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
-                //_logger.LogDebug(e.PlayerState.ToString());
-                _resultsService.RegisterResults(e.PlayerState);
+                EventHandler<PlayerStateEventArgs> handler = IncomingPlayerEvent;
+                if (handler != null)
+                {
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }                
             };
 
             _zwiftPacketMonitor.IncomingPlayerWorldTimeUpdateEvent += (s, e) => {
-                //_logger.LogDebug(e.PlayerUpdate.ToString());
+                EventHandler<PlayerWorldTimeEventArgs> handler = IncomingPlayerWorldTimeUpdateEvent;
+                if (handler != null)
+                {
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }
             };
             
-            _zwiftPacketMonitor.IncomingChatMessageEvent += async (s, e) => {
-                _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
-                _riderService.AddRider(e.Message.RiderId, e.Message.FirstName, e.Message.LastName, e.Message.CountryCode);
-
-                // Only alert chat messages that are actually visible to the player in the game
-                if (_currentGroupId == e.Message.EventSubgroup)
+            _zwiftPacketMonitor.IncomingChatMessageEvent += (s, e) => {
+                EventHandler<ChatMessageEventArgs> handler = IncomingChatMessageEvent;
+                if (handler != null)
                 {
-                    // See if we're configured to read own messages if this came from us
-                    if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
-                    {
-                        var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
-                        var message = JsonConvert.SerializeObject(new ChatNotificationModel()
-                        {
-                            RiderId = e.Message.RiderId,
-                            FirstName = e.Message.FirstName,
-                            LastName = e.Message.LastName,
-                            Message = e.Message.Message,
-                            AudioSource = await _speechService.GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
-                            Avatar = GetRiderProfileImage(e.Message.Avatar),
-                            CountryCode = countryCode
-                        });
-
-                        _chatNotificationsService.SendNotificationAsync(message).Wait();
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
                     }
                 }
             };
 
             _zwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
-                //_logger.LogInformation($"WORLD: {e.PlayerUpdate.ToString()}");
-                _riderService.AddRider(e.PlayerUpdate.F2, e.PlayerUpdate.FirstName, e.PlayerUpdate.LastName);
+                EventHandler<PlayerEnteredWorldEventArgs> handler = IncomingPlayerEnteredWorldEvent;
+                if (handler != null)
+                {
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }
             };
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
-                _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
-                _riderService.AddRider(e.RideOn.RiderId, e.RideOn.FirstName, e.RideOn.LastName, e.RideOn.CountryCode);
-                _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
-
-                var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                EventHandler<RideOnGivenEventArgs> handler = IncomingRideOnGivenEvent;
+                if (handler != null)
                 {
-                    RiderId = e.RideOn.RiderId,
-                    FirstName = e.RideOn.FirstName,
-                    LastName = e.RideOn.LastName,
-                    AudioSource = "/audio/rockon.ogg"
-                });
-
-                _rideOnNotificationService.SendNotificationAsync(message).Wait();
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }
             };
 
             await _zwiftPacketMonitor.StartCaptureAsync(_config.GetValue<string>("NetworkInterface"), cancellationToken);
-        }
-
-        private string GetRiderProfileImage(string avatarUrl)
-        {
-            if (_alertsConfig.Chat.ShowProfileImage)
-            {
-                return (string.IsNullOrWhiteSpace(avatarUrl) ? "/images/avatar.jpg" : avatarUrl);
-            }
-            else 
-            {
-                return ("");
-            }
-        }
-
-        private void DispatchPlayerStateUpdate(ZwiftPacketMonitor.PlayerState state) {
-            var summary = _averageTelemetryService.LogTelemetry(state);
-
-            var telemetry = JsonConvert.SerializeObject(new TelemetryModel()
-            {
-                PlayerId = state.Id,
-                Power = state.Power,
-                HeartRate = state.Heartrate,
-                AvgPower = summary.Power,
-                AvgHeartRate = summary.Heartrate,
-                AvgSpeed = summary.Speed,
-                AvgCadence = summary.Cadence
-            });
-
-            _telemetryNotificationsService.SendNotificationAsync(telemetry).Wait();
         }
     }
 }
