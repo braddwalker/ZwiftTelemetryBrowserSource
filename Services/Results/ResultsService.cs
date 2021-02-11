@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using ZwiftPacketMonitor;
 using System.Collections.Concurrent;
 using System.Linq;
@@ -21,7 +20,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         public int Laps {get; set;}
     }
 
-    public class ResultsService : BackgroundService
+    public class ResultsService : BaseZwiftService
     {
         private readonly ZwiftMonitorService _zwiftService;
         private readonly RiderService _riderService;
@@ -31,7 +30,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         private ConcurrentDictionary<int, PlayerRaceData> _raceData;
 
         public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, 
-            IConfiguration rootConfig, EventService eventService, ZwiftMonitorService zwiftService)
+            IConfiguration rootConfig, EventService eventService, ZwiftMonitorService zwiftService) : base(logger)
         {
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
@@ -64,9 +63,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Results service started");
-
-            _zwiftService.IncomingPlayerEvent += (s, e) =>
+           _zwiftService.IncomingPlayerEvent += (s, e) =>
             {
                 RegisterResults(e.PlayerState);
             };

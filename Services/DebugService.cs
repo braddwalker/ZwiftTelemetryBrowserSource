@@ -1,17 +1,16 @@
 using System;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
 using System.Threading;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
-    public class DebugService : BackgroundService
+    public class DebugService : BaseZwiftService
     {
         private readonly ILogger<DebugService> _logger;
         private readonly ZwiftMonitorService _zwiftService;
 
-        public DebugService(ILogger<DebugService> logger, ZwiftMonitorService zwiftService)
+        public DebugService(ILogger<DebugService> logger, ZwiftMonitorService zwiftService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));

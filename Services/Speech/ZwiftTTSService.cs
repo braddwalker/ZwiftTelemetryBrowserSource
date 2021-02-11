@@ -5,7 +5,6 @@ using System.Threading;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Hosting;
 using ZwiftTelemetryBrowserSource.Util;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
@@ -21,7 +20,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
     /// they speek. This mapping is transient, and is reset anytime the program reloads, or an explicit call to ResetVoices
     /// is made.
     /// </summary>
-    public class ZwiftTTSService : BackgroundService
+    public class ZwiftTTSService : BaseZwiftService
     {
         private readonly ILogger<ZwiftTTSService> _logger;
         private readonly SpeechService _speechService;
@@ -36,7 +35,8 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         private int _currentRiderId;
 
         public ZwiftTTSService(ILogger<ZwiftTTSService> logger, SpeechService speechService, IOptions<SpeechOptions> speechConfig, 
-            EventService eventService, ZwiftMonitorService zwiftService, IOptions<AlertsConfig> alertsConfig, IChatNotificationsService chatNotificationsService)
+            EventService eventService, ZwiftMonitorService zwiftService, IOptions<AlertsConfig> alertsConfig, 
+            IChatNotificationsService chatNotificationsService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _speechService = speechService ?? throw new ArgumentException(nameof(speechService));
@@ -62,27 +62,30 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
 
             _zwiftService.IncomingChatMessageEvent += async (s, e) =>
             {
-                _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
-
-                // Only alert chat messages that are actually visible to the player in the game
-                if (_currentGroupId == e.Message.EventSubgroup)
+                if (_alertsConfig.Chat.Enabled)
                 {
-                    // See if we're configured to read own messages if this came from us
-                    if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
-                    {
-                        var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
-                        var message = JsonConvert.SerializeObject(new ChatNotificationModel()
-                        {
-                            RiderId = e.Message.RiderId,
-                            FirstName = e.Message.FirstName,
-                            LastName = e.Message.LastName,
-                            Message = e.Message.Message,
-                            AudioSource = await GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
-                            Avatar = GetRiderProfileImage(e.Message.Avatar),
-                            CountryCode = countryCode
-                        });
+                    _logger.LogInformation($"CHAT: {e.Message.ToString()}, {RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode)}");
 
-                        await _chatNotificationsService.SendNotificationAsync(message);
+                    // Only alert chat messages that are actually visible to the player in the game
+                    if (_currentGroupId == e.Message.EventSubgroup)
+                    {
+                        // See if we're configured to read own messages if this came from us
+                        if (_alertsConfig.Chat.AlertOwnMessages || (e.Message.RiderId != _currentRiderId))
+                        {
+                            var countryCode = RegionInfo.CurrentRegion.IsoCodeFromNumeric(e.Message.CountryCode);
+                            var message = JsonConvert.SerializeObject(new ChatNotificationModel()
+                            {
+                                RiderId = e.Message.RiderId,
+                                FirstName = e.Message.FirstName,
+                                LastName = e.Message.LastName,
+                                Message = e.Message.Message,
+                                AudioSource = await GetAudioBase64(e.Message.RiderId, e.Message.Message, countryCode),
+                                Avatar = GetRiderProfileImage(e.Message.Avatar),
+                                CountryCode = countryCode
+                            });
+
+                            await _chatNotificationsService.SendNotificationAsync(message);
+                        }
                     }
                 }
             };

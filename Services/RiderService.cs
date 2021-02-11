@@ -1,6 +1,5 @@
 using System;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
@@ -28,13 +27,13 @@ namespace ZwiftTelemetryBrowserSource.Services
     /// <summary>
     /// This class acts as a cache repository for rider information
     /// </summary>
-    public class RiderService : BackgroundService
+    public class RiderService : BaseZwiftService
     {
         private readonly ILogger<RiderService> _logger;
         private readonly ZwiftMonitorService _zwiftService;
         private Dictionary<int, RiderInfo> _riders;
 
-        public RiderService(ILogger<RiderService> logger, ZwiftMonitorService zwiftService) 
+        public RiderService(ILogger<RiderService> logger, ZwiftMonitorService zwiftService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));

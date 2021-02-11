@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Models;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
-    public class RideOnService : BackgroundService
+    public class RideOnService : BaseZwiftService
     {
 
         private readonly ILogger<RideOnService> _logger;
@@ -24,7 +23,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         public RideOnService(ILogger<RideOnService> logger, ZwiftMonitorService zwiftService,
             IRideOnNotificationService rideOnNotificationService,
             IOptions<AlertsConfig> alertsConfig,
-            TwitchIrcService twitchIrcService)
+            TwitchIrcService twitchIrcService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));
@@ -37,18 +36,21 @@ namespace ZwiftTelemetryBrowserSource.Services
         {
             _zwiftService.IncomingRideOnGivenEvent += async (s, e) =>
             {
-                _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
-                _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
-
-                var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                if (_alertsConfig.RideOn.Enabled)
                 {
-                    RiderId = e.RideOn.RiderId,
-                    FirstName = e.RideOn.FirstName,
-                    LastName = e.RideOn.LastName,
-                    AudioSource = "/audio/rockon.ogg"
-                });
+                    _logger.LogInformation($"RIDEON: {e.RideOn.ToString()}");
+                    _twitchIrcService.SendPublicChatMessage($"Thanks for the ride on, {e.RideOn.FirstName} {e.RideOn.LastName}!");
 
-                await _rideOnNotificationService.SendNotificationAsync(message);
+                    var message = JsonConvert.SerializeObject(new RideOnNotificationModel()
+                    {
+                        RiderId = e.RideOn.RiderId,
+                        FirstName = e.RideOn.FirstName,
+                        LastName = e.RideOn.LastName,
+                        AudioSource = _alertsConfig.RideOn.AudioSource
+                    });
+
+                    await _rideOnNotificationService.SendNotificationAsync(message);
+                }
             };
 
             await Task.CompletedTask;

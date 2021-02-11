@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
@@ -10,14 +9,14 @@ namespace ZwiftTelemetryBrowserSource.Services
 {
     /// <summary>
     /// This service is responsible for listening for Zwift game events, dispatched by the ZwiftPacketMonitor
-    /// library. When game events are received, they then get dispatched to the client webpage via a Server-Side
-    /// Events implementation.
+    /// library. When game events are received, they then get dispatched to various listeners that handle 
+    /// more specific functionality.
     /// </summary>
-    public class ZwiftMonitorService : BackgroundService
+    public class ZwiftMonitorService : BaseZwiftService
     {
         public ZwiftMonitorService(ILogger<ZwiftMonitorService> logger, 
             ZwiftPacketMonitor.Monitor zwiftPacketMonitor,
-            IConfiguration config)
+            IConfiguration config) : base(logger)
         {
             _config = config ?? throw new ArgumentException(nameof(config));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
@@ -38,14 +37,14 @@ namespace ZwiftTelemetryBrowserSource.Services
         
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Stopping ZwiftMonitorService");
             await _zwiftPacketMonitor.StopCaptureAsync();
+            await base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting ZwiftMonitorService");
-
+            _logger.LogError("SDOFISDFOISDFPS");
+            
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
                 EventHandler<PlayerStateEventArgs> handler = OutgoingPlayerEvent;
                 if (handler != null)

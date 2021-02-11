@@ -5,12 +5,11 @@ using System.IO;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using IrcDotNet;
 
 namespace ZwiftTelemetryBrowserSource.Services.Twitch
 {
-    public class TwitchIrcService : BackgroundService
+    public class TwitchIrcService : BaseZwiftService
     {
         private const int WAIT_TIMEOUT = 10000;
 
@@ -26,7 +25,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
         private ConcurrentQueue<string> _messageQueue;
         
 
-        public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig) 
+        public TwitchIrcService(ILogger<TwitchIrcService> logger, IOptions<TwitchConfig> twitchConfig) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _twitchConfig = twitchConfig?.Value ?? throw new ArgumentException(nameof(twitchConfig));
@@ -46,8 +45,6 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
         {
             if (!_twitchConfig.Enabled)
                 return;
-
-            _logger.LogInformation("Starting TwitchIrcService");
 
             _ircClient = new IrcDotNet.TwitchIrcClient();
             _ircClient.FloodPreventer = new IrcStandardFloodPreventer(4, 2000);
@@ -102,11 +99,10 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Stopping TwitchIrcService");
             _shutdown = true;
             _ircClient?.Disconnect();
 
-            await Task.CompletedTask;
+            await base.StopAsync(cancellationToken);
         }
 
         private void ConnectIrc(CancellationToken cancellationToken)

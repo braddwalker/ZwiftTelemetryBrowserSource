@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using Nito.AsyncEx;
 
 namespace ZwiftTelemetryBrowserSource.Services
@@ -18,7 +17,7 @@ namespace ZwiftTelemetryBrowserSource.Services
     /// In order to guard against performance degredations with longer running activities, incoming telemetry data will be 
     /// normalized down to one data point per second.
     /// </summary>
-    public class AverageTelemetryService : BackgroundService
+    public class AverageTelemetryService : BaseZwiftService
     {
         private ILogger<AverageTelemetryService> _logger;
         private HashSet<AvgPowerData> _powerData;
@@ -35,7 +34,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         public AvgSummary _avgSummary;
         private AsyncLock _asyncLock;
 
-        public AverageTelemetryService(ILogger<AverageTelemetryService> logger, EventService eventService) 
+        public AverageTelemetryService(ILogger<AverageTelemetryService> logger, EventService eventService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
@@ -67,8 +66,6 @@ namespace ZwiftTelemetryBrowserSource.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             try {
-                _logger.LogInformation("Starting AverageTelemetryService");
-
                 await Task.Run(async () => 
                 {
                     // Loop until the service gets the shutdown signal
@@ -166,8 +163,6 @@ namespace ZwiftTelemetryBrowserSource.Services
                         }
                     }
                 }, cancellationToken);
-
-                _logger.LogInformation("Stopping AveragePowerService");                
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "ExecuteAsync");

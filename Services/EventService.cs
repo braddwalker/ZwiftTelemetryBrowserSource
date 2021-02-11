@@ -1,7 +1,6 @@
 using System;
 using ZwiftPacketMonitor;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
 using System.Threading;
 
@@ -16,7 +15,7 @@ namespace ZwiftTelemetryBrowserSource.Services
     /// This service is responsible for detecting event changes and dispatching them to any
     /// consumers who listen for that event.
     /// </summary>
-    public class EventService : BackgroundService
+    public class EventService : BaseZwiftService
     {
         private int _currentEventId;
         private readonly ILogger<EventService> _logger;
@@ -27,7 +26,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// </summary>
         public event EventHandler<EventChangedArgs> EventChanged;
 
-        public EventService(ILogger<EventService> logger, ZwiftMonitorService zwiftService)
+        public EventService(ILogger<EventService> logger, ZwiftMonitorService zwiftService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));

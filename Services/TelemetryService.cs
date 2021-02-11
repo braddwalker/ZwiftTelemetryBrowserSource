@@ -2,14 +2,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Models;
 using Newtonsoft.Json;
 
 namespace ZwiftTelemetryBrowserSource.Services
 {
-    public class TelemetryService : BackgroundService
+    public class TelemetryService : BaseZwiftService
     {
         private readonly ILogger<TelemetryService> _logger;
         private readonly ZwiftMonitorService _zwiftService;
@@ -18,7 +17,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
         public TelemetryService(ILogger<TelemetryService> logger, ZwiftMonitorService zwiftService, 
             ITelemetryNotificationsService telemetryNotificationService,
-            AverageTelemetryService averageTelemetryService)
+            AverageTelemetryService averageTelemetryService) : base(logger)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _zwiftService = zwiftService ?? throw new ArgumentException(nameof(zwiftService));
