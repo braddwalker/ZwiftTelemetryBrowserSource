@@ -30,13 +30,26 @@ namespace ZwiftTelemetryBrowserSource.Services
         private IList<AvgSpeedData> _intermediateSpeedData;
         private IList<AvgCadenceData> _intermediateCadenceData;
         private IList<AvgHeartrateData> _intermediateHeartrateData;
+        private EventService _eventService;
 
         public AvgSummary _avgSummary;
         private AsyncLock _asyncLock;
 
-        public AverageTelemetryService(ILogger<AverageTelemetryService> logger) 
+        public AverageTelemetryService(ILogger<AverageTelemetryService> logger, EventService eventService) 
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
+            _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
+
+            _eventService.EventChanged += (s, e) =>
+            {
+                // If we are entering an event, aways reset average telemetry.
+                // If leaving an event (NewEventId =0) we won't reset.
+                if (e.NewEventId != 0)
+                {
+                    Reset();
+                }
+            };
+
             _powerData = new HashSet<AvgPowerData>();
             _speedData = new HashSet<AvgSpeedData>();
             _cadenceData = new HashSet<AvgCadenceData>();
@@ -164,7 +177,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         /// <summary>
         /// Resets the average calculations. This can be useful when the rider switches between events.
         /// </summary>
-        public void Reset()
+        private void Reset()
         {
             _logger.LogDebug("Resetting telemetry");
             

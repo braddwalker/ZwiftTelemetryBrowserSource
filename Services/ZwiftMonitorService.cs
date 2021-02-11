@@ -35,7 +35,8 @@ namespace ZwiftTelemetryBrowserSource.Services
             IOptions<AlertsConfig> alertsConfig,
             TwitchIrcService twitchIrcService,
             ResultsService resultsService,
-            RiderService riderService) 
+            RiderService riderService,
+            EventService eventService) 
         {
 
             _config = config ?? throw new ArgumentException(nameof(config));
@@ -50,20 +51,22 @@ namespace ZwiftTelemetryBrowserSource.Services
             _twitchIrcService = twitchIrcService ?? throw new ArgumentException(nameof(twitchIrcService));
             _resultsService = resultsService ?? throw new ArgumentException(nameof(resultsService));
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
+            _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
         }
 
-        private ITelemetryNotificationsService _telemetryNotificationsService {get;}
-        private IChatNotificationsService _chatNotificationsService {get;}
-        private IRideOnNotificationService _rideOnNotificationService {get;}
-        private IConfiguration _config {get;}
-        private ILogger<ZwiftMonitorService> _logger {get;}
-        private ZwiftPacketMonitor.Monitor _zwiftPacketMonitor {get;}
-        private AverageTelemetryService _averageTelemetryService {get;}
-        private ZwiftTTSService _speechService {get;}
-        private AlertsConfig _alertsConfig {get;}
-        private TwitchIrcService _twitchIrcService {get;}
-        private ResultsService _resultsService {get;}
-        private RiderService _riderService {get;}
+        private ITelemetryNotificationsService _telemetryNotificationsService;
+        private IChatNotificationsService _chatNotificationsService;
+        private IRideOnNotificationService _rideOnNotificationService;
+        private IConfiguration _config;
+        private ILogger<ZwiftMonitorService> _logger;
+        private ZwiftPacketMonitor.Monitor _zwiftPacketMonitor;
+        private AverageTelemetryService _averageTelemetryService;
+        private ZwiftTTSService _speechService;
+        private AlertsConfig _alertsConfig;
+        private TwitchIrcService _twitchIrcService;
+        private ResultsService _resultsService;
+        private RiderService _riderService;
+        private EventService _eventService;
         
         // The Zwift ID of the player being tracked. This is either
         // YOU the actual rider, or another rider chosen at random for debug mode
@@ -86,33 +89,14 @@ namespace ZwiftTelemetryBrowserSource.Services
                 try 
                 {
                     //_logger.LogDebug(e.PlayerState.ToString());
+                    _eventService.HandlePlayerEvent(e.PlayerState);
                     _resultsService.RegisterResults(e.PlayerState);
 
                     // Need to hang on to this for later
                     _currentRiderId = e.PlayerState.Id;
+                    _currentGroupId = e.PlayerState.GroupId;
 
                     DispatchPlayerStateUpdate(e.PlayerState);
-
-                    // See if we need to trigger an event/world changed
-                    if (_currentGroupId != e.PlayerState.GroupId)
-                    {
-                        _logger.LogInformation($"World/event change detected from {_currentGroupId} to {e.PlayerState.GroupId}");
-                        _currentGroupId = e.PlayerState.GroupId;
-
-                        // Reset the speech service voices since we're in a new world
-                        _speechService.ResetVoices();
-
-                        // Just to be explicit, we should reset anytime the world changes
-                        _resultsService.Reset(e.PlayerState.GroupId);
-
-                        // If we are entering an event, aways reset average telemetry
-                        // If we are leaving an event, let the config decide
-                        if ((e.PlayerState.GroupId != 0) 
-                            || (e.PlayerState.GroupId == 0 && _config.GetValue<bool>("ResetAveragesOnEventFinish")))
-                        {
-                            _averageTelemetryService.Reset();   
-                        }
-                    }
                 }
                 catch (Exception ex) {
                     _logger.LogError(ex, "OutgoingPlayerEvent");

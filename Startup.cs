@@ -13,6 +13,7 @@ using ZwiftTelemetryBrowserSource.Services.Notifications;
 using ZwiftTelemetryBrowserSource.Services.Alerts;
 using ZwiftTelemetryBrowserSource.Services.Twitch;
 using ZwiftTelemetryBrowserSource.Services.Results;
+using ZwiftTelemetryBrowserSource.Util;
 using System.Linq;
 
 namespace ZwiftTelemetryBrowserSource
@@ -61,21 +62,16 @@ namespace ZwiftTelemetryBrowserSource
             services.AddTransient<SpeechService>();
             services.AddTransient<AlertsService>();
             services.AddTransient<ResultsService>();
+            services.AddSingleton<EventService>();
             services.AddSingleton<RiderService>();
             services.AddSingleton<TwitchIrcService>();
-            services.AddHostedService<ZwiftMonitorService>();
 
-            // Since this is a background service, we also need to inject it into other services
-            // This MUST remain singleton, otherwise you get different instances injected into other services
-            // which will break because this service requires state
-            services.AddSingleton<AverageTelemetryService>();
-            services.AddHostedService<AverageTelemetryService>(provider => provider.GetService<AverageTelemetryService>());
-
-            // Since this is a background service, we also need to inject it into other services
-            // This MUST remain singleton, otherwise you get different instances injected into other services
-            // which will break because this service requires state
-            services.AddSingleton<TwitchIrcService>();
-            services.AddHostedService<TwitchIrcService>(provider => provider.GetService<TwitchIrcService>());
+            // Since these are background services, we also need to inject it into other services
+            // These MUST remain singleton, otherwise you get different instances injected into other services
+            // which will break because these services requires state
+            services.AddSingletonHostedService<ZwiftMonitorService>();
+            services.AddSingletonHostedService<AverageTelemetryService>();
+            services.AddSingletonHostedService<TwitchIrcService>();
 
             services.AddControllersWithViews();
             services.AddLogging(builder => 

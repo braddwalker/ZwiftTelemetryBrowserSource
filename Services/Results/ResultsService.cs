@@ -23,15 +23,16 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
         private RiderService _riderService;
         private ILogger<ResultsService> _logger;
         private ResultsConfig _config;
-
+        private EventService _eventService;
         private ConcurrentDictionary<int, PlayerRaceData> _raceData;
 
-        public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig)
+        public ResultsService(RiderService riderService, ILogger<ResultsService> logger, IOptions<ResultsConfig> config, IConfiguration rootConfig, EventService eventService)
         {
             _riderService = riderService ?? throw new ArgumentException(nameof(riderService));
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentException(nameof(config));
             _raceData = new ConcurrentDictionary<int, PlayerRaceData>();
+            _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
 
             if (_config.Enabled)
             {
@@ -44,13 +45,18 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                         if (eventId.HasValue)
                         {
                             _logger.LogDebug($"Configuration change detected, reloading EventId: {eventId}");
-                            Reset(eventId);
+                            Reset(eventId.Value);
                         }
                     });
+
+                _eventService.EventChanged += (s, e) =>
+                {
+                    Reset(e.NewEventId);
+                };
             }
         }
 
-        public void Reset(int? eventId = null)
+        private void Reset(int eventId)
         {
             if (!_config.Enabled)
             {
@@ -58,11 +64,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
             }
 
             _raceData = new ConcurrentDictionary<int, PlayerRaceData>();
-
-            if (eventId.HasValue)
-            {
-                _config.EventId = eventId.Value;
-            }
+            _config.EventId = eventId;
         }
 
         public void RegisterResults(PlayerState state)

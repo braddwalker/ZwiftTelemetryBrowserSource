@@ -19,19 +19,26 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         private SpeechService _speechService;
         private SpeechOptions _speechConfig;
         private IDictionary<int, string> _riderVoices;
+        private EventService _eventService;
 
-        public ZwiftTTSService(ILogger<ZwiftTTSService> logger, SpeechService speechService, IOptions<SpeechOptions> speechConfig)
+        public ZwiftTTSService(ILogger<ZwiftTTSService> logger, SpeechService speechService, IOptions<SpeechOptions> speechConfig, EventService eventService)
         {
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _speechService = speechService ?? throw new ArgumentException(nameof(speechService));
             _speechConfig = speechConfig?.Value ?? throw new ArgumentException(nameof(speechConfig));
+            _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
             _riderVoices = new Dictionary<int, string>();
+
+            _eventService.EventChanged += (s, e) =>
+            {
+                ResetVoices();
+            };
         }
 
         /// <summary>
         /// Manually resets all voice assignments.
         /// </summary>
-        public void ResetVoices()
+        private void ResetVoices()
         {
             if (!_speechConfig.Enabled)
                 return;
