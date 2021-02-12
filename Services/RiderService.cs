@@ -79,20 +79,14 @@ namespace ZwiftTelemetryBrowserSource.Services
 
         private void AddRider(RiderInfo rider)
         {
-            if (!_riders.ContainsKey(rider.RiderId))
-            {
-                _riders.Add(rider.RiderId, rider);
-            }
+            _riders.TryAdd(rider.RiderId, rider);
         }
 
         public RiderInfo GetRider(int riderId) 
         {
-            if (_riders.ContainsKey(riderId))
-            {
-                return (_riders[riderId]);
-            }
-
-            return (null);
+            RiderInfo rider = null;
+            _riders.TryGetValue(riderId, out rider);
+            return (rider);
         }
 
         public ICollection<RiderInfo> GetRiders()

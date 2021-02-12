@@ -53,16 +53,16 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
                             Reset(eventId.Value);
                         }
                     });
-
-                _eventService.EventChanged += (s, e) =>
-                {
-                    Reset(e.NewEventId);
-                };
             }
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _eventService.EventChanged += (s, e) =>
+            {
+                Reset(e.NewEventId);
+            };
+
            _zwiftService.IncomingPlayerEvent += (s, e) =>
             {
                 RegisterResults(e.PlayerState);

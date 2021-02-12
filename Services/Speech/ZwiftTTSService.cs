@@ -46,15 +46,15 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
             _alertsConfig = alertsConfig?.Value ?? throw new ArgumentException(nameof(alertsConfig));
             _chatNotificationsService = chatNotificationsService ?? throw new ArgumentException(nameof(chatNotificationsService));
             _riderVoices = new Dictionary<int, string>();
-
-            _eventService.EventChanged += (s, e) =>
-            {
-                ResetVoices();
-            };
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _eventService.EventChanged += (s, e) =>
+            {
+                ResetVoices();
+            };
+
             _zwiftService.OutgoingPlayerEvent += (s, e) => {
                 _currentRiderId = e.PlayerState.Id;
                 _currentGroupId = e.PlayerState.GroupId;
@@ -101,7 +101,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
             }
             else 
             {
-                return ("");
+                return (string.Empty);
             }
         }
 
@@ -126,7 +126,7 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
         /// <param name="message">The message being spoken</param>
         /// <param name="countryCode">The rider's country of origin</param>
         /// <returns>A Base64 encoded audio stream</returns>
-        public async Task<string> GetAudioBase64(int riderId, string message, string countryCode)
+        private async Task<string> GetAudioBase64(int riderId, string message, string countryCode)
         {
             if (!_speechConfig.Enabled)
                 return (null);

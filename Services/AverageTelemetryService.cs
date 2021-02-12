@@ -39,16 +39,6 @@ namespace ZwiftTelemetryBrowserSource.Services
             _logger = logger ?? throw new ArgumentException(nameof(logger));
             _eventService = eventService ?? throw new ArgumentException(nameof(eventService));
 
-            _eventService.EventChanged += (s, e) =>
-            {
-                // If we are entering an event, aways reset average telemetry.
-                // If leaving an event (NewEventId =0) we won't reset.
-                if (e.NewEventId != 0)
-                {
-                    Reset();
-                }
-            };
-
             _powerData = new HashSet<AvgPowerData>();
             _speedData = new HashSet<AvgSpeedData>();
             _cadenceData = new HashSet<AvgCadenceData>();
@@ -65,6 +55,16 @@ namespace ZwiftTelemetryBrowserSource.Services
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _eventService.EventChanged += (s, e) =>
+            {
+                // If we are entering an event, aways reset average telemetry.
+                // If leaving an event (NewEventId =0) we won't reset.
+                if (e.NewEventId != 0)
+                {
+                    Reset();
+                }
+            };
+
             try {
                 // Loop until the service gets the shutdown signal
                 while (!cancellationToken.IsCancellationRequested)
