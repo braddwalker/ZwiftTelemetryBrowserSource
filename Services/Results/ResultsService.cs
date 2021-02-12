@@ -41,6 +41,12 @@ namespace ZwiftTelemetryBrowserSource.Services.Results
 
             if (_config.Enabled)
             {
+                // If no event is specified, default to 0
+                if (!_config.EventId.HasValue)
+                {
+                    _config.EventId = 0;
+                }
+
                 // Listen for config changes
                 ChangeToken.OnChange(
                     () => rootConfig.GetReloadToken(),

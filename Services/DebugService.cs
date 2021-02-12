@@ -25,7 +25,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftService.IncomingPlayerEnteredWorldEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingPlayerEnteredWorldEvent: {e.PlayerUpdate}");
+                _logger.LogDebug($"IncomingPlayerEnteredWorldEvent: {e.PlayerUpdate}");
             };
 
             _zwiftService.IncomingPlayerEvent += (s, e) =>
@@ -55,7 +55,7 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftService.IncomingEventPositionsEvent += (s, e) =>
             {
-                _logger.LogDebug($"IncomingEventPositionsEvent: {e.EventPositions}");          
+                //_logger.LogDebug($"IncomingEventPositionsEvent: {e.EventPositions}");          
             };
 
             await Task.CompletedTask;

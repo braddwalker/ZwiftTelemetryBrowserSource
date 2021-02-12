@@ -64,7 +64,7 @@ namespace ZwiftTelemetryBrowserSource.Services
                 _currentEventId = state.GroupId;
 
                 // Dispatch this update to downstream listeners
-                EventHandler<EventChangedArgs> handler = EventChanged;
+                var handler = EventChanged;
                 if (handler != null)
                 {
                     try {
