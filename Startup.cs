@@ -28,8 +28,8 @@ namespace ZwiftTelemetryBrowserSource
                 options.ReconnectInterval = 5000;
             });
 
-            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));           
-            services.AddTransient<Monitor>();
+            services.Configure<ZonesModel>(Configuration.GetSection("Zones"));
+            services.AddHostedService<ZwiftMonitorService>();
             services.AddZwiftPacketMonitoring();
             services.AddControllersWithViews();
             services.AddLogging(builder => 

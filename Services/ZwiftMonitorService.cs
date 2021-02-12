@@ -34,48 +34,22 @@ namespace ZwiftTelemetryBrowserSource.Services
         private ILogger<ZwiftMonitorService> Logger {get;}
         private IHostApplicationLifetime ApplicationLifetime {get;}
         private ZwiftPacketMonitor.Monitor ZwiftPacketMonitor {get;}
-        private int trackedPlayerId;
-
+ 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Starting ZwiftMonitorService");
 
-            // Debug mode will operate a little differently than the regular game mode.
-            // When debug mode is on, we'll pick the first INCOMING player's data to use, and will lock
-            // onto that PlayerId to filter out subsequent updates. This makes the testing more consistent. 
-            // This way it's possible to test event dispatch w/o having to be on the bike with power meter 
-            // and heart rate strap actually connected and outputting data.
-            if (Config.GetValue<bool>("Debug"))
-            {
-                Logger.LogInformation("Debug mode enabled");
-
-                ZwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {     
-                    try 
-                    {               
-                        if ((trackedPlayerId == 0) || (trackedPlayerId == e.PlayerState.Id))
-                        {
-                            trackedPlayerId = e.PlayerState.Id;
-                            DispatchPlayerStateUpdate(e.PlayerState);
-                        }
-                    }
-                    catch (Exception ex) {
-                        Logger.LogError(ex, "IncomingPlayerEvent");
-                    }
-                };
-            }
-            else {
-                // Under normal circumstances we will only be dispatching telemetry data from OUTGOING
-                // packets, which represent YOU, that are being sent out to the Zwift servers.
-                ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
-                    try 
-                    {
-                        DispatchPlayerStateUpdate(e.PlayerState);
-                    }
-                    catch (Exception ex) {
-                        Logger.LogError(ex, "OutgoingPlayerEvent");
-                    }
-                };
-            }
+            // Under normal circumstances we will only be dispatching telemetry data from OUTGOING
+            // packets, which represent YOU, that are being sent out to the Zwift servers.
+            ZwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
+                try 
+                {
+                    DispatchPlayerStateUpdate(e.PlayerState);
+                }
+                catch (Exception ex) {
+                    Logger.LogError(ex, "OutgoingPlayerEvent");
+                }
+            };
 
             await ZwiftPacketMonitor.StartCaptureAsync(Config.GetValue<string>("NetworkInterface"), cancellationToken);
         }
