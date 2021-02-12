@@ -28,8 +28,9 @@ namespace ZwiftTelemetryBrowserSource.Services
         public event EventHandler<PlayerEnteredWorldEventArgs> IncomingPlayerEnteredWorldEvent;
         public event EventHandler<RideOnGivenEventArgs> IncomingRideOnGivenEvent;
         public event EventHandler<ChatMessageEventArgs> IncomingChatMessageEvent;
-
         public event EventHandler<PlayerWorldTimeEventArgs> IncomingPlayerWorldTimeUpdateEvent;
+        public event EventHandler<MeetupEventArgs> IncomingMeetupEvent;
+        public event EventHandler<EventPositionsEventArgs> IncomingEventPositionsEvent;
 
         private IConfiguration _config;
         private ILogger<ZwiftMonitorService> _logger;
@@ -44,7 +45,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {            
             _zwiftPacketMonitor.OutgoingPlayerEvent += (s, e) => {
-                EventHandler<PlayerStateEventArgs> handler = OutgoingPlayerEvent;
+                var handler = OutgoingPlayerEvent;
                 if (handler != null)
                 {
                     try {
@@ -57,7 +58,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingPlayerEvent += (s, e) => {
-                EventHandler<PlayerStateEventArgs> handler = IncomingPlayerEvent;
+                var handler = IncomingPlayerEvent;
                 if (handler != null)
                 {
                     try {
@@ -70,7 +71,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingPlayerWorldTimeUpdateEvent += (s, e) => {
-                EventHandler<PlayerWorldTimeEventArgs> handler = IncomingPlayerWorldTimeUpdateEvent;
+                var handler = IncomingPlayerWorldTimeUpdateEvent;
                 if (handler != null)
                 {
                     try {
@@ -83,7 +84,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
             
             _zwiftPacketMonitor.IncomingChatMessageEvent += (s, e) => {
-                EventHandler<ChatMessageEventArgs> handler = IncomingChatMessageEvent;
+                var handler = IncomingChatMessageEvent;
                 if (handler != null)
                 {
                     try {
@@ -96,7 +97,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             };
 
             _zwiftPacketMonitor.IncomingPlayerEnteredWorldEvent += (s, e) => {
-                EventHandler<PlayerEnteredWorldEventArgs> handler = IncomingPlayerEnteredWorldEvent;
+                var handler = IncomingPlayerEnteredWorldEvent;
                 if (handler != null)
                 {
                     try {
@@ -110,6 +111,34 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftPacketMonitor.IncomingRideOnGivenEvent += (s, e) => {
                 EventHandler<RideOnGivenEventArgs> handler = IncomingRideOnGivenEvent;
+                if (handler != null)
+                {
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }
+            };
+
+            _zwiftPacketMonitor.IncomingMeetupEvent += (s, e) =>
+            {
+                var handler = IncomingMeetupEvent;
+                if (handler != null)
+                {
+                    try {
+                        handler(this, e);
+                    }
+                    catch {
+                        // Don't let downstream exceptions bubble up
+                    }
+                }
+            };
+
+            _zwiftPacketMonitor.IncomingEventPositionsEvent += (s, e) =>
+            {
+                var handler = IncomingEventPositionsEvent;
                 if (handler != null)
                 {
                     try {

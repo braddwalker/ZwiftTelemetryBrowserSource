@@ -57,7 +57,7 @@ namespace ZwiftTelemetryBrowserSource.Services
             {
                 AddRider(new RiderInfo()
                 {
-                    RiderId = e.PlayerUpdate.F2,
+                    RiderId = e.PlayerUpdate.RiderId,
                     FirstName = e.PlayerUpdate.FirstName,
                     LastName = e.PlayerUpdate.LastName
                 });
