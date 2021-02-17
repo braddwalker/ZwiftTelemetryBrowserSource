@@ -28,7 +28,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         public event EventHandler<PlayerEnteredWorldEventArgs> IncomingPlayerEnteredWorldEvent;
         public event EventHandler<RideOnGivenEventArgs> IncomingRideOnGivenEvent;
         public event EventHandler<ChatMessageEventArgs> IncomingChatMessageEvent;
-        public event EventHandler<PlayerWorldTimeEventArgs> IncomingPlayerWorldTimeUpdateEvent;
+        public event EventHandler<PlayerTimeSyncEventArgs> IncomingPlayerTimeSyncEvent;
         public event EventHandler<MeetupEventArgs> IncomingMeetupEvent;
         public event EventHandler<EventPositionsEventArgs> IncomingEventPositionsEvent;
 
@@ -70,8 +70,8 @@ namespace ZwiftTelemetryBrowserSource.Services
                 }                
             };
 
-            _zwiftPacketMonitor.IncomingPlayerWorldTimeUpdateEvent += (s, e) => {
-                var handler = IncomingPlayerWorldTimeUpdateEvent;
+            _zwiftPacketMonitor.IncomingPlayerTimeSyncEvent += (s, e) => {
+                var handler = IncomingPlayerTimeSyncEvent;
                 if (handler != null)
                 {
                     try {

@@ -20,7 +20,7 @@ namespace ZwiftTelemetryBrowserSource.Services
         {
             _zwiftService.IncomingChatMessageEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingChatMessage: {e.Message}");
+                _logger.LogDebug($"IncomingChatMessage: {e.Message}");
             };
 
             _zwiftService.IncomingPlayerEnteredWorldEvent += (s, e) =>
@@ -30,32 +30,32 @@ namespace ZwiftTelemetryBrowserSource.Services
 
             _zwiftService.IncomingPlayerEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingPlayerEvent: {e.PlayerState}");
+                _logger.LogDebug($"IncomingPlayerEvent: {e.PlayerState}");
             };
 
-            _zwiftService.IncomingPlayerWorldTimeUpdateEvent +=  (s, e) =>
+            _zwiftService.IncomingPlayerTimeSyncEvent +=  (s, e) =>
             {
-                //_logger.LogDebug($"IncomingPlayerWorldTimeUpdateEvent: {e.PlayerUpdate}");
+                _logger.LogDebug($"IncomingPlayerTimeSyncEvent: {e.TimeSync}");
             };
 
             _zwiftService.IncomingRideOnGivenEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingRideOnGivenEvent: {e.RideOn}");
+                _logger.LogDebug($"IncomingRideOnGivenEvent: {e.RideOn}");
             };
 
             _zwiftService.OutgoingPlayerEvent += (s, e) =>
             {
-                //_logger.LogDebug($"OutgoingPlayerEvent: {e.PlayerState}");
+                _logger.LogDebug($"OutgoingPlayerEvent: {e.PlayerState}");
             };
 
             _zwiftService.IncomingMeetupEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingMeetupEvent: {e.Meetup}");
+                _logger.LogDebug($"IncomingMeetupEvent: {e.Meetup}");
             };
 
             _zwiftService.IncomingEventPositionsEvent += (s, e) =>
             {
-                //_logger.LogDebug($"IncomingEventPositionsEvent: {e.EventPositions}");          
+                _logger.LogDebug($"IncomingEventPositionsEvent: {e.EventPositions}");          
             };
 
             await Task.CompletedTask;
