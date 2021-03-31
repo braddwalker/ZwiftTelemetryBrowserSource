@@ -15,6 +15,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ZwiftPacketMonitor\ZwiftPacketMonitor.csproj" />
+    <ProjectReference Include="..\ZwiftPacketMonitor\src\ZwiftPacketMonitor.csproj" />
   </ItemGroup>
 </Project>
