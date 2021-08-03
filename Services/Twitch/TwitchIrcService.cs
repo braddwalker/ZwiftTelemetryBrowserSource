@@ -34,10 +34,17 @@ namespace ZwiftTelemetryBrowserSource.Services.Twitch
 
             if (_twitchConfig.Enabled)
             {
-                _logger.LogInformation("TwitchIrcService enabled");
-
-                _twitchOAuthKey = File.ReadAllText(_twitchConfig.AuthTokenFile).Trim();
-                _logger.LogInformation($"Twitch OAuth key loaded from {new FileInfo(_twitchConfig.AuthTokenFile).FullName}");
+                if (File.Exists(_twitchConfig.AuthTokenFile))
+                {
+                    _twitchOAuthKey = File.ReadAllText(_twitchConfig.AuthTokenFile).Trim();
+                    _logger.LogInformation("TwitchIrcService enabled");
+                    _logger.LogInformation($"Twitch OAuth key loaded from {new FileInfo(_twitchConfig.AuthTokenFile).FullName}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Unable to find key file {new FileInfo(_twitchConfig.AuthTokenFile).FullName}");
+                    _twitchConfig.Enabled = false;
+                }
             }
         }
 

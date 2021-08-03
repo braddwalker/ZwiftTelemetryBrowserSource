@@ -27,12 +27,20 @@ namespace ZwiftTelemetryBrowserSource.Services.Speech
 
             if (_options.Enabled) 
             {
-                _logger.LogInformation("Speech service enabled");
-                _subscriptionKey = File.ReadAllText(_options.SubscriptionKeyFile).Trim();
-                _logger.LogInformation($"Azure key loaded from {new FileInfo(_options.SubscriptionKeyFile).FullName}");
-
-                _ssmlTemplate = File.ReadAllText(SSML_TEMPLATE);
-                _logger.LogInformation($"SSML template loaded from {new FileInfo(SSML_TEMPLATE).FullName}");
+                if (File.Exists(_options.SubscriptionKeyFile))
+                {
+                    _subscriptionKey = File.ReadAllText(_options.SubscriptionKeyFile).Trim();
+                    _logger.LogInformation("Speech service enabled");
+                    _logger.LogInformation($"Azure key loaded from {new FileInfo(_options.SubscriptionKeyFile).FullName}");
+                
+                    _ssmlTemplate = File.ReadAllText(SSML_TEMPLATE);
+                    _logger.LogInformation($"SSML template loaded from {new FileInfo(SSML_TEMPLATE).FullName}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Unable to find key file {new FileInfo(_options.SubscriptionKeyFile).FullName}");
+                    _options.Enabled = false;
+                }
             }
         }
 
